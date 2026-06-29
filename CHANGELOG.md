@@ -24,9 +24,14 @@ The format is based on Keep a Changelog.
 - Firebase Storage Rules and emulator-backed tests for authenticated user-owned report image uploads, image content type, file size, and blocked deletes.
 - Client report payload helper tests for Storage path construction, `gs://` payload shaping, callable response parsing, and readable backend error mapping.
 - Phase 4 demo package docs: demo script, judging notes, and competition checklist.
+- Phase 5 Firebase backend shared reports with Firestore realtime subscription.
+- Callable `confirmReport` for confirmation-by-nearby-report using `targetReportId` and `confirmingReportId` within 500m/60 minutes.
+- UI action for "ยืนยันจุดนี้" with Thai success/error messages and local demo fallback behavior.
+- Emulator-backed tests for `confirmReport` and Security Rules coverage blocking direct client edits to `confirmedByReportIds`.
 
 ### Changed
 
 - Updated Phase 3 demo-readiness documentation for runtime modes, Firebase setup, generated files, and competition-day smoke testing.
 - Improved Firebase backend report error messages in Thai for App Check, config, anonymous auth, Storage upload, callable Function rejection, rate limit, and invalid payload cases.
 - Updated README with Competition Demo Quick Start for local judging setup.
+- Updated README, project state, testing guide, demo checklist, and demo script for Firebase shared backend mode.

@@ -23,6 +23,13 @@ export interface CreateReportCallableResponse {
   };
 }
 
+export interface ConfirmReportCallableResponse {
+  targetReportId: string;
+  confirmingReportId: string;
+  confirmedByReportIds: string[];
+  verificationStatus: "ยืนยันแล้ว";
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -127,6 +134,28 @@ export function readCreateReportCallableResponse(
   };
 }
 
+export function readConfirmReportCallableResponse(
+  data: unknown
+): ConfirmReportCallableResponse {
+  if (
+    !isRecord(data) ||
+    typeof data.targetReportId !== "string" ||
+    typeof data.confirmingReportId !== "string" ||
+    data.verificationStatus !== "ยืนยันแล้ว" ||
+    !Array.isArray(data.confirmedByReportIds) ||
+    !data.confirmedByReportIds.every((reportId): reportId is string => typeof reportId === "string")
+  ) {
+    throw new Error("callable confirmReport ไม่ได้คืนค่าผลการยืนยันที่ถูกต้อง");
+  }
+
+  return {
+    targetReportId: data.targetReportId,
+    confirmingReportId: data.confirmingReportId,
+    confirmedByReportIds: data.confirmedByReportIds,
+    verificationStatus: data.verificationStatus
+  };
+}
+
 export function createBackendDisplayReport(
   draft: ReportDraft,
   reportId: string,
@@ -185,4 +214,66 @@ export function mapCreateReportError(error: unknown): string {
 
       return message || "ส่งรายงานไม่สำเร็จ กรุณาลองใหม่";
   }
+}
+
+export function mapConfirmReportError(error: unknown): string {
+  const code = readErrorCode(error);
+  const message = readErrorMessage(error);
+
+  if (
+    message?.includes("App Check") ||
+    message?.includes("ยังตั้งค่า") ||
+    message?.includes("ตั้งค่าไม่ครบ")
+  ) {
+    return message;
+  }
+
+  if (isFirebaseAuthErrorCode(code)) {
+    return "เข้าสู่ระบบแบบ anonymous ไม่สำเร็จ: ตรวจว่าเปิด Anonymous Auth ใน Firebase แล้วลองใหม่";
+  }
+
+  if (code === "unauthenticated") {
+    return "ยังไม่ได้เข้าสู่ระบบ จึงยืนยันรายงานผ่าน Firebase backend ไม่ได้";
+  }
+
+  if (code === "already-exists" || message === "duplicate-confirmation") {
+    return "คุณยืนยันจุดนี้แล้ว ไม่สามารถยืนยันซ้ำได้";
+  }
+
+  if (message === "cannot-confirm-own-report") {
+    return "ยืนยันรายงานของตัวเองไม่ได้";
+  }
+
+  if (message === "confirming-report-not-owned") {
+    return "รายงานที่ใช้ยืนยันต้องเป็นรายงานของบัญชีปัจจุบัน";
+  }
+
+  if (
+    message === "confirming-report-outside-window" ||
+    message === "confirming-report-outside-radius" ||
+    message === "cannot-confirm-with-same-report"
+  ) {
+    return "ต้องสร้างรายงานใกล้จุดนี้ภายใน 60 นาที จึงจะใช้ยืนยันได้";
+  }
+
+  if (
+    message === "target-report-not-confirmable" ||
+    message === "confirming-report-not-confirmable"
+  ) {
+    return "รายงานนี้ถูกซ่อนหรือถูกปฏิเสธแล้ว จึงยืนยันไม่ได้";
+  }
+
+  if (code === "not-found") {
+    return "ไม่พบรายงานที่ต้องการยืนยัน กรุณารีเฟรชแล้วลองใหม่";
+  }
+
+  if (code === "invalid-argument") {
+    return "ข้อมูลยืนยันรายงานไม่ถูกต้อง กรุณารีเฟรชแล้วลองใหม่";
+  }
+
+  if (code === "failed-precondition") {
+    return "ต้องสร้างรายงานใกล้จุดนี้ก่อน จึงจะใช้ยืนยันได้";
+  }
+
+  return message || "ยืนยันรายงานไม่สำเร็จ กรุณาลองใหม่";
 }

@@ -14,7 +14,9 @@ import {
   buildGsReportImageUrl,
   buildReportImagePath,
   createBackendDisplayReport,
+  mapConfirmReportError,
   mapCreateReportError,
+  readConfirmReportCallableResponse,
   readCreateReportCallableResponse
 } from "@/lib/firebase/reportPayload";
 
@@ -78,5 +80,50 @@ export async function createReportInBackend(draft: ReportDraft): Promise<Report>
     return createBackendDisplayReport(draft, response.reportId, uid);
   } catch (error) {
     throw new Error(mapCreateReportError(error));
+  }
+}
+
+export async function getBackendSessionUserId(): Promise<string> {
+  const services = getFirebaseServices();
+  if (!services) {
+    throw new Error("Firebase backend ยังตั้งค่าไม่ครบ: เพิ่ม NEXT_PUBLIC_FIREBASE_* หรือใช้ Local demo mode");
+  }
+
+  try {
+    const uid = await ensureAnonymousSession();
+    if (!uid) {
+      throw new Error("เข้าสู่ระบบแบบ anonymous ไม่สำเร็จ: Firebase Auth ไม่คืนค่า user id");
+    }
+
+    return uid;
+  } catch (error) {
+    throw new Error(mapConfirmReportError(error));
+  }
+}
+
+export async function confirmReportInBackend(
+  targetReportId: string,
+  confirmingReportId: string
+): Promise<void> {
+  const services = getFirebaseServices();
+  if (!services) {
+    throw new Error("Firebase backend ยังตั้งค่าไม่ครบ: เพิ่ม NEXT_PUBLIC_FIREBASE_* หรือใช้ Local demo mode");
+  }
+
+  try {
+    await ensureAppCheckToken();
+    const uid = await ensureAnonymousSession();
+    if (!uid) {
+      throw new Error("เข้าสู่ระบบแบบ anonymous ไม่สำเร็จ: Firebase Auth ไม่คืนค่า user id");
+    }
+
+    const confirmReport = httpsCallable(services.functions, "confirmReport");
+    const result = await confirmReport({
+      targetReportId,
+      confirmingReportId
+    });
+    readConfirmReportCallableResponse(result.data);
+  } catch (error) {
+    throw new Error(mapConfirmReportError(error));
   }
 }

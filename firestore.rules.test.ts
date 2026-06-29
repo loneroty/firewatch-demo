@@ -174,6 +174,12 @@ describe("firestore security rules", () => {
 
     await assertFails(
       updateDoc(doc(userDb, "reports", "report-owned"), {
+        confirmedByReportIds: ["report-nearby"]
+      })
+    );
+
+    await assertFails(
+      updateDoc(doc(userDb, "reports", "report-owned"), {
         moderationStatus: "ถูกซ่อน"
       })
     );

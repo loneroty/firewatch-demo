@@ -51,6 +51,8 @@ export type ReportErrorCode =
   | "unauthenticated"
   | "invalid-argument"
   | "failed-precondition"
+  | "already-exists"
+  | "not-found"
   | "resource-exhausted"
   | "internal";
 

@@ -5,6 +5,7 @@ import {
   onCall,
   type FunctionsErrorCode
 } from "firebase-functions/v2/https";
+import { confirmReportForRequest } from "./confirmReport";
 import { createReportForRequest } from "./createReport";
 import { ReportFunctionError } from "./reportValidation";
 
@@ -15,7 +16,7 @@ function toHttpsError(error: unknown): HttpsError {
     return new HttpsError(error.code as FunctionsErrorCode, error.message);
   }
 
-  return new HttpsError("internal", "Unable to create report.");
+  return new HttpsError("internal", "Request failed.");
 }
 
 export const createReport = onCall(
@@ -26,6 +27,28 @@ export const createReport = onCall(
   async (request) => {
     try {
       return await createReportForRequest(
+        {
+          authUid: request.auth?.uid ?? null,
+          payload: request.data
+        },
+        {
+          db: getFirestore()
+        }
+      );
+    } catch (error) {
+      throw toHttpsError(error);
+    }
+  }
+);
+
+export const confirmReport = onCall(
+  {
+    region: "asia-southeast1",
+    enforceAppCheck: true
+  },
+  async (request) => {
+    try {
+      return await confirmReportForRequest(
         {
           authUid: request.auth?.uid ?? null,
           payload: request.data

@@ -1,6 +1,6 @@
 "use client";
 
-import { Flag, MapPin } from "lucide-react";
+import { CheckCircle2, Flag, MapPin } from "lucide-react";
 import { getCategoryLabel, getSeverityLabel } from "@/lib/reportLabels";
 import type { Report } from "@/lib/types";
 
@@ -9,6 +9,7 @@ interface ReportListProps {
   selectedReportId: string | null;
   onSelectReport: (reportId: string) => void;
   onFlagReport: (reportId: string) => void;
+  onConfirmReport: (reportId: string) => void | Promise<void>;
 }
 
 function formatTime(value: string): string {
@@ -36,7 +37,8 @@ export function ReportList({
   reports,
   selectedReportId,
   onSelectReport,
-  onFlagReport
+  onFlagReport,
+  onConfirmReport
 }: ReportListProps) {
   if (reports.length === 0) {
     return (
@@ -98,18 +100,30 @@ export function ReportList({
             {report.notes ? (
               <p className="mt-3 line-clamp-2 text-sm text-smoke-700">{report.notes}</p>
             ) : null}
-            <div className="mt-3 flex items-center justify-between gap-2 border-t border-smoke-100 pt-3">
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-smoke-100 pt-3">
               <span className="text-xs text-smoke-600">
                 ยืนยันโดย {report.confirmedByReportIds.length} รายงาน
               </span>
-              <button
-                className="inline-flex items-center gap-1 rounded-md border border-smoke-200 px-2.5 py-1.5 text-xs font-semibold text-smoke-700 hover:border-smoke-400"
-                type="button"
-                onClick={() => onFlagReport(report.id)}
-              >
-                <Flag aria-hidden="true" size={14} />
-                ไม่เหมาะสม {report.flaggedCount > 0 ? report.flaggedCount : ""}
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  className="inline-flex items-center gap-1 rounded-md border border-canopy-200 px-2.5 py-1.5 text-xs font-semibold text-canopy-700 hover:border-canopy-400"
+                  type="button"
+                  onClick={() => {
+                    void onConfirmReport(report.id);
+                  }}
+                >
+                  <CheckCircle2 aria-hidden="true" size={14} />
+                  ยืนยันจุดนี้
+                </button>
+                <button
+                  className="inline-flex items-center gap-1 rounded-md border border-smoke-200 px-2.5 py-1.5 text-xs font-semibold text-smoke-700 hover:border-smoke-400"
+                  type="button"
+                  onClick={() => onFlagReport(report.id)}
+                >
+                  <Flag aria-hidden="true" size={14} />
+                  ไม่เหมาะสม {report.flaggedCount > 0 ? report.flaggedCount : ""}
+                </button>
+              </div>
             </div>
           </article>
         ))}

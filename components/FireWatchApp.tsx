@@ -6,7 +6,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ReportForm } from "@/components/ReportForm";
 import { ReportList } from "@/components/ReportList";
 import { SummaryMetric } from "@/components/SummaryMetric";
-import { createReportInBackend } from "@/lib/firebase/reportClient";
+import {
+  confirmReportInBackend,
+  createReportInBackend,
+  getBackendSessionUserId
+} from "@/lib/firebase/reportClient";
+import { subscribeToBackendReports } from "@/lib/firebase/reportStream";
 import {
   getRuntimeModeLabel,
   isFirebaseBackendConfigured
@@ -16,9 +21,14 @@ import {
   loadStoredReports,
   saveStoredReports
 } from "@/lib/localReportStore";
-import { applyVerificationToReputation, evaluateHourlyRateLimit } from "@/lib/verification/reputation";
+import {
+  VERIFICATION_RADIUS_METERS,
+  VERIFICATION_WINDOW_MS,
+  applyVerificationToReputation,
+  evaluateHourlyRateLimit
+} from "@/lib/verification/reputation";
+import { distanceMeters } from "@/lib/verification/geo";
 import { createLocalReport } from "@/lib/reportFactory";
-import { createSeedReports } from "@/lib/seedReports";
 import type { Report, ReportDraft, VerificationStatus } from "@/lib/types";
 
 const FireMap = dynamic(
@@ -42,6 +52,37 @@ const statusFilters: readonly StatusFilter[] = [
   "ถูกปฏิเสธ"
 ];
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "เกิดข้อผิดพลาด กรุณาลองใหม่";
+}
+
+function findNearbyOwnedReport(
+  targetReport: Report,
+  reports: readonly Report[],
+  userId: string
+): Report | null {
+  const targetTime = new Date(targetReport.createdAt).getTime();
+
+  return reports.find((report) => {
+    if (report.id === targetReport.id || report.userId !== userId) {
+      return false;
+    }
+
+    if (
+      report.moderationStatus === "ถูกซ่อน" ||
+      report.verificationStatus === "ถูกปฏิเสธ"
+    ) {
+      return false;
+    }
+
+    const reportTime = new Date(report.createdAt).getTime();
+    const isWithinWindow = Math.abs(targetTime - reportTime) <= VERIFICATION_WINDOW_MS;
+    const isWithinRadius = distanceMeters(targetReport, report) <= VERIFICATION_RADIUS_METERS;
+
+    return isWithinWindow && isWithinRadius;
+  }) ?? null;
+}
+
 export function FireWatchApp() {
   const isBackendMode = useMemo(() => isFirebaseBackendConfigured(), []);
   const [reports, setReports] = useState<Report[]>([]);
@@ -59,7 +100,7 @@ export function FireWatchApp() {
         return;
       }
 
-      const storedReports = isBackendMode ? createSeedReports() : loadStoredReports();
+      const storedReports = isBackendMode ? [] : loadStoredReports();
       setReports(storedReports);
       setSelectedReportId(storedReports[0]?.id ?? null);
       if (!isBackendMode) {
@@ -70,6 +111,31 @@ export function FireWatchApp() {
     return () => {
       isMounted = false;
     };
+  }, [isBackendMode]);
+
+  useEffect(() => {
+    if (!isBackendMode) {
+      return undefined;
+    }
+
+    return subscribeToBackendReports({
+      onReports: (nextReports) => {
+        setReports(nextReports);
+        setSelectedReportId((currentSelectedReportId) => {
+          if (
+            currentSelectedReportId &&
+            nextReports.some((report) => report.id === currentSelectedReportId)
+          ) {
+            return currentSelectedReportId;
+          }
+
+          return nextReports[0]?.id ?? null;
+        });
+      },
+      onError: (message) => {
+        setSystemMessage(message);
+      }
+    });
   }, [isBackendMode]);
 
   useEffect(() => {
@@ -107,9 +173,8 @@ export function FireWatchApp() {
       if (isBackendMode) {
         const report = await createReportInBackend(draft);
 
-        setReports((currentReports) => [report, ...currentReports]);
         setSelectedReportId(report.id);
-        setSystemMessage("Report sent through Firebase backend.");
+        setSystemMessage("ส่งรายงานผ่าน Firebase backend แล้ว รายงานจะแสดงร่วมกันผ่าน Firestore realtime");
         return;
       }
 
@@ -143,6 +208,85 @@ export function FireWatchApp() {
       );
     },
     [isBackendMode, localUserId, reports, reputationScore]
+  );
+
+  const handleConfirmReport = useCallback(
+    async (targetReportId: string) => {
+      setSystemMessage(null);
+
+      const targetReport = reports.find((report) => report.id === targetReportId);
+      if (!targetReport) {
+        setSystemMessage("ไม่พบรายงานที่ต้องการยืนยัน กรุณารีเฟรชแล้วลองใหม่");
+        return;
+      }
+
+      if (targetReport.moderationStatus === "ถูกซ่อน" || targetReport.verificationStatus === "ถูกปฏิเสธ") {
+        setSystemMessage("รายงานนี้ถูกซ่อนหรือถูกปฏิเสธแล้ว จึงยืนยันไม่ได้");
+        return;
+      }
+
+      if (isBackendMode) {
+        try {
+          const backendUserId = await getBackendSessionUserId();
+          if (targetReport.userId === backendUserId) {
+            setSystemMessage("ยืนยันรายงานของตัวเองไม่ได้");
+            return;
+          }
+
+          const confirmingReport = findNearbyOwnedReport(targetReport, reports, backendUserId);
+          if (!confirmingReport) {
+            setSystemMessage("ต้องสร้างรายงานใกล้จุดนี้ก่อน จึงจะใช้ยืนยันได้");
+            return;
+          }
+
+          if (targetReport.confirmedByReportIds.includes(confirmingReport.id)) {
+            setSystemMessage("คุณยืนยันจุดนี้แล้ว ไม่สามารถยืนยันซ้ำได้");
+            return;
+          }
+
+          await confirmReportInBackend(targetReport.id, confirmingReport.id);
+          setSelectedReportId(targetReport.id);
+          setSystemMessage("ยืนยันจุดนี้สำเร็จ");
+        } catch (error) {
+          setSystemMessage(getErrorMessage(error));
+        }
+
+        return;
+      }
+
+      if (targetReport.userId === localUserId) {
+        setSystemMessage("ยืนยันรายงานของตัวเองไม่ได้");
+        return;
+      }
+
+      const confirmingReport = findNearbyOwnedReport(targetReport, reports, localUserId);
+      if (!confirmingReport) {
+        setSystemMessage("ต้องสร้างรายงานใกล้จุดนี้ก่อน จึงจะใช้ยืนยันได้");
+        return;
+      }
+
+      if (targetReport.confirmedByReportIds.includes(confirmingReport.id)) {
+        setSystemMessage("คุณยืนยันจุดนี้แล้ว ไม่สามารถยืนยันซ้ำได้");
+        return;
+      }
+
+      setReports((currentReports) =>
+        currentReports.map((report) => {
+          if (report.id !== targetReport.id) {
+            return report;
+          }
+
+          return {
+            ...report,
+            confirmedByReportIds: [...report.confirmedByReportIds, confirmingReport.id],
+            verificationStatus: "ยืนยันแล้ว"
+          };
+        })
+      );
+      setSelectedReportId(targetReport.id);
+      setSystemMessage("ยืนยันจุดนี้สำเร็จใน Local demo mode");
+    },
+    [isBackendMode, localUserId, reports]
   );
 
   const handleFlagReport = useCallback((reportId: string) => {
@@ -239,6 +383,7 @@ export function FireWatchApp() {
                 selectedReportId={selectedReportId}
                 onSelectReport={setSelectedReportId}
                 onFlagReport={handleFlagReport}
+                onConfirmReport={handleConfirmReport}
               />
             </section>
           </aside>

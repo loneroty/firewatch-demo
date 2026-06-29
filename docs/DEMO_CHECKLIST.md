@@ -5,7 +5,7 @@
 - Confirm branch/build is the intended demo package.
 - Close unrelated browser tabs and terminals.
 - Keep one terminal ready at the project root.
-- Decide primary demo path: Local demo mode first, Firebase backend mode only if Firebase env/App Check/backend are ready.
+- Decide primary demo path: Local demo mode first, Firebase shared backend mode only if Firebase env/App Check/backend are ready on every demo device.
 - Keep this fallback sentence ready: "If backend connectivity is unstable, I will show the same user flow in Local demo mode, which is designed to run offline from Firebase."
 
 ## Commands
@@ -49,6 +49,8 @@ npm.cmd audit
 - Attach an image and submit a report.
 - Confirm the submitted report appears at the top of the list and on the map.
 - Refresh and confirm localStorage preserves the report.
+- Confirm this mode is local-only: another machine will not see the report unless it uses the same browser storage.
+- Click "ยืนยันจุดนี้" without a nearby own report and confirm the UI explains that a nearby report is required first.
 - Submit reports until rate limit triggers, if time allows.
 
 ## Firebase Backend Mode Test Cases
@@ -58,10 +60,15 @@ npm.cmd audit
 - Confirm App Check site key is valid for the demo origin.
 - Confirm Storage Rules and Cloud Function are deployed only from tested code.
 - Confirm header shows `Firebase ready`.
+- Open the same URL on two browsers/devices using the same Firebase backend config.
 - Submit a report with a real image.
 - Confirm image upload goes to `reportImages/{auth.uid}/{imageId}`.
 - Confirm callable payload uses `gs://...`, not data URL.
-- Confirm new report appears in map/list after `createReport` succeeds.
+- Confirm new report appears in map/list on both devices through Firestore realtime subscription.
+- On the second device, create a nearby report within 500m/60 minutes.
+- Select the first device's report and click "ยืนยันจุดนี้".
+- Confirm callable `confirmReport` succeeds, the status becomes `ยืนยันแล้ว`, and the confirmation count updates on both devices.
+- Try confirming without a nearby own report and confirm the Thai error says a nearby report is required first.
 
 ## Reset Local Demo Data
 
@@ -100,6 +107,8 @@ location.reload();
 - Do not deploy during the presentation.
 - For emulator tests, use the scripted commands in `package.json`; do not manually change rules live.
 - If App Check fails, use Local demo mode and explain the backend security design from `docs/DEMO_SCRIPT.md`.
+- If realtime reports do not appear on the second device, refresh once, check that both devices use the same Firebase project/env, and fall back to Local demo mode if backend recovery would take too long.
+- If confirmation fails, verify that the second device has created its own nearby report within 500m/60 minutes and is not trying to confirm its own report.
 
 ### Image Upload Issues
 

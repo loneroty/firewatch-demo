@@ -38,6 +38,8 @@ npm run test:functions
 - Submit a report with valid lat/lng, category, severity, note, and photo.
 - Confirm the report appears at the top of the list and on the map.
 - Refresh the page and confirm the report is still present from localStorage.
+- Confirm Local demo mode does not share reports across another browser/device unless localStorage is copied.
+- Try "ยืนยันจุดนี้" without another nearby local report from the current local user and confirm the UI shows "ต้องสร้างรายงานใกล้จุดนี้ก่อน จึงจะใช้ยืนยันได้".
 - Submit enough reports to hit the local demo hourly limit and confirm the UI shows a readable rate-limit message.
 
 ### Firebase backend mode
@@ -50,8 +52,12 @@ npm run test:functions
 - Submit a valid report with a real image.
 - Confirm the client uploads the compressed image to Storage before calling `createReport`.
 - Confirm the callable payload uses `gs://<bucket>/reportImages/{auth.uid}/{imageId}` and does not send a data URL.
-- Confirm the new report appears in the current map/list state after the callable returns.
+- Confirm the new report appears in the current map/list state from Firestore realtime subscription.
+- Open the app on a second browser/device with the same Firebase backend config and confirm it sees the first report without refreshing the first device.
+- On the second browser/device, create a nearby report within 500m/60 minutes.
+- Select the first user's report and click "ยืนยันจุดนี้"; confirm the UI shows a success message and the report status/count updates through realtime subscription.
 - Confirm no client code writes directly to `reports`; Security Rules still block direct report creates.
+- Confirm client code does not write `confirmedByReportIds` or `verificationStatus` directly; callable `confirmReport` is the only backend confirmation path.
 
 ### Failure cases
 
@@ -62,6 +68,10 @@ npm run test:functions
 - Storage upload rejected or interrupted: backend submission should show a photo upload error.
 - Callable `createReport` rejects invalid payload: UI should show an invalid report data message.
 - Callable `createReport` rate limit exceeded: UI should show the 10 reports/hour message.
+- Callable `confirmReport` rejects a user confirming their own report: UI should show a self-confirmation error.
+- Callable `confirmReport` rejects duplicate confirmation: UI should show a duplicate confirmation error.
+- Callable `confirmReport` rejects when no nearby own report exists: UI should show "ต้องสร้างรายงานใกล้จุดนี้ก่อน จึงจะใช้ยืนยันได้".
+- Callable `confirmReport` rejects hidden/rejected target reports: UI should show a not-confirmable message.
 - Network or emulator unavailable: UI should show a retryable backend error; switch to Local demo mode for the live demo if backend recovery would take too long.
 
 ## Current Test Coverage
@@ -87,16 +97,18 @@ npm run test:functions
 - Cloud Function rejects invalid lat/lng, category, severity, over-limit text/photo metadata, userId mismatch, and server-controlled fields.
 - Cloud Function validates `gs://` report image URLs so the path must be `reportImages/{auth.uid}/{imageId}`.
 - Cloud Function enforces 10 reports/hour per `auth.uid` using transaction-backed `rateLimits/{uid}/hours/{yyyyMMddHH}` buckets.
+- Cloud Function `confirmReport` rejects unauthenticated requests, self-confirmation, duplicate confirmation, hidden/rejected targets, confirming reports not owned by `auth.uid`, and confirming reports outside 500m/60 minutes.
+- Cloud Function `confirmReport` updates `confirmedByReportIds` in a transaction and sets `verificationStatus` to `ยืนยันแล้ว` when confirmation succeeds.
+- Firestore Security Rules block direct client writes to `confirmedByReportIds` and `verificationStatus`.
 - Client backend payload helpers build Storage paths, `gs://` report payloads, callable response parsing, and user-facing backend error messages without including local-only image blobs or server-owned fields.
 
 ## Last Verified Run
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test` passed: 7 test suites, 39 tests.
-- `npm.cmd audit` passed: 0 vulnerabilities.
+- `npm.cmd run test` passed: 8 test suites, 49 tests.
 - `npm.cmd run build` passed, compiled Cloud Functions, and generated the PWA service worker.
-- Browser smoke test on `http://127.0.0.1:3000` returned HTTP 200 and rendered FireWatch, Local demo mode, report form, 3 report cards, Leaflet map tiles, and marker clustering.
+- `npm.cmd audit` passed: 0 vulnerabilities.
 - `npm.cmd run test:rules` passed: 1 test suite, 8 tests. Firebase CLI warned that the user was not authenticated, but the local emulator test completed successfully.
 - `npm.cmd run test:storage` passed: 1 test suite, 5 tests. Firebase CLI warned that the user was not authenticated, but the local emulator test completed successfully.
-- `npm.cmd run test:functions` passed: 1 test suite, 11 tests. Firebase CLI warned that the user was not authenticated, and the Admin SDK emitted a metadata lookup warning while using the emulator, but the local emulator test completed successfully.
+- `npm.cmd run test:functions` passed inside the full test run: 2 test suites, 21 tests. Firebase CLI warned that the user was not authenticated, and the Admin SDK emitted a metadata lookup warning while using the emulator, but the local emulator test completed successfully.
