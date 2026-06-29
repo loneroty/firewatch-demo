@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="FireWatch maskable icon">
+  <rect width="128" height="128" fill="#0f172a"/>
+  <circle cx="64" cy="64" r="50" fill="#f8fafc"/>
+  <path d="M66 104c19 0 34-13 34-32 0-15-9-25-20-36-4-5-8-12-9-19-16 10-22 23-20 39-5-5-8-11-8-19-10 9-17 20-17 35 0 20 16 32 40 32z" fill="#ea580c"/>
+  <path d="M67 94c10 0 18-7 18-18 0-8-5-14-12-21-8 6-12 14-11 24-4-3-6-8-7-13-6 5-9 11-9 18 0 7 7 10 21 10z" fill="#fef3c7"/>
+</svg>
