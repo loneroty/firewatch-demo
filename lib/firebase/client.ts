@@ -107,7 +107,7 @@ export async function ensureAppCheckToken(): Promise<void> {
   const appCheck = getFirebaseAppCheck();
   if (!appCheck) {
     throw new Error(
-      "Firebase App Check is not configured. Add NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY or switch to Local demo mode."
+      "ยังไม่ได้ตั้งค่า App Check สำหรับ Firebase backend: เพิ่ม NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY หรือใช้ Local demo mode"
     );
   }
 
@@ -115,7 +115,7 @@ export async function ensureAppCheckToken(): Promise<void> {
     await getToken(appCheck);
   } catch (error) {
     const reason = error instanceof Error ? error.message : "unknown error";
-    throw new Error(`Firebase App Check could not issue a token: ${reason}`);
+    throw new Error(`ขอ App Check token ไม่สำเร็จ: ตรวจ site key/domain แล้วลองใหม่ (${reason})`);
   }
 }
 

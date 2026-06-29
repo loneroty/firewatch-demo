@@ -26,15 +26,15 @@ function createReportImageId(): string {
 
 function requireBackendImage(draft: ReportDraft): Blob {
   if (!draft.photoBlob) {
-    throw new Error("Backend mode requires a compressed image file.");
+    throw new Error("โหมด Firebase backend ต้องมีไฟล์รูปที่บีบอัดแล้วก่อนส่งรายงาน");
   }
 
   if (draft.photoBlob.size > REPORT_IMAGE_MAX_BYTES) {
-    throw new Error("The selected image is larger than the backend upload limit.");
+    throw new Error("รูปยังใหญ่เกิน 500KB หลังบีบอัด กรุณาเลือกรูปที่เล็กลง");
   }
 
   if (!draft.imageMetadata) {
-    throw new Error("Backend mode requires image metadata.");
+    throw new Error("โหมด Firebase backend ต้องมีข้อมูลรูปภาพก่อนส่งรายงาน");
   }
 
   return draft.photoBlob;
@@ -43,14 +43,14 @@ function requireBackendImage(draft: ReportDraft): Blob {
 export async function createReportInBackend(draft: ReportDraft): Promise<Report> {
   const services = getFirebaseServices();
   if (!services) {
-    throw new Error("Firebase backend is not configured. Use Local demo mode or add Firebase public env vars.");
+    throw new Error("Firebase backend ยังตั้งค่าไม่ครบ: เพิ่ม NEXT_PUBLIC_FIREBASE_* หรือใช้ Local demo mode");
   }
 
   try {
     await ensureAppCheckToken();
     const uid = await ensureAnonymousSession();
     if (!uid) {
-      throw new Error("Anonymous sign-in did not return a user id.");
+      throw new Error("เข้าสู่ระบบแบบ anonymous ไม่สำเร็จ: Firebase Auth ไม่คืนค่า user id");
     }
 
     const photoBlob = requireBackendImage(draft);
@@ -63,7 +63,7 @@ export async function createReportInBackend(draft: ReportDraft): Promise<Report>
 
     const storageBucket = services.app.options.storageBucket;
     if (typeof storageBucket !== "string") {
-      throw new Error("Firebase Storage bucket is not configured correctly.");
+      throw new Error("Firebase Storage bucket ยังตั้งค่าไม่ถูกต้อง");
     }
 
     const createReport = httpsCallable(services.functions, "createReport");

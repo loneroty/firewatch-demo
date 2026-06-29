@@ -7,6 +7,7 @@ npm run lint
 npm run typecheck
 npm run test
 npm run build
+npm audit
 ```
 
 Rules tests can be run directly with:
@@ -26,6 +27,42 @@ Cloud Function report tests can be run directly with:
 ```bash
 npm run test:functions
 ```
+
+## Manual Smoke Test Checklist
+
+### Local demo mode
+
+- Start with no `.env.local` Firebase values or with incomplete Firebase public env.
+- Run `npm.cmd run dev` and open `http://localhost:3000`.
+- Confirm the header shows `Local demo`.
+- Submit a report with valid lat/lng, category, severity, note, and photo.
+- Confirm the report appears at the top of the list and on the map.
+- Refresh the page and confirm the report is still present from localStorage.
+- Submit enough reports to hit the local demo hourly limit and confirm the UI shows a readable rate-limit message.
+
+### Firebase backend mode
+
+- Set public Firebase env values in `.env.local`; do not commit the file.
+- Confirm Anonymous Auth is enabled in Firebase Auth.
+- Confirm App Check has a valid web site key for the demo domain or local emulator setup.
+- Confirm Storage Rules allow only `reportImages/{auth.uid}/{imageId}` uploads and Cloud Function `createReport` is available in `asia-southeast1`.
+- Run `npm.cmd run dev` and confirm the header shows `Firebase ready`.
+- Submit a valid report with a real image.
+- Confirm the client uploads the compressed image to Storage before calling `createReport`.
+- Confirm the callable payload uses `gs://<bucket>/reportImages/{auth.uid}/{imageId}` and does not send a data URL.
+- Confirm the new report appears in the current map/list state after the callable returns.
+- Confirm no client code writes directly to `reports`; Security Rules still block direct report creates.
+
+### Failure cases
+
+- No Firebase env: app should stay in Local demo mode and continue working.
+- Firebase env incomplete: report submission should show a readable config error instead of crashing.
+- Missing App Check key: backend submission should show a readable App Check setup error.
+- Anonymous Auth disabled or failing: backend submission should show an anonymous sign-in error.
+- Storage upload rejected or interrupted: backend submission should show a photo upload error.
+- Callable `createReport` rejects invalid payload: UI should show an invalid report data message.
+- Callable `createReport` rate limit exceeded: UI should show the 10 reports/hour message.
+- Network or emulator unavailable: UI should show a retryable backend error; switch to Local demo mode for the live demo if backend recovery would take too long.
 
 ## Current Test Coverage
 
@@ -56,9 +93,10 @@ npm run test:functions
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test` passed: 5 test suites, 27 tests.
+- `npm.cmd run test` passed: 7 test suites, 39 tests.
 - `npm.cmd audit` passed: 0 vulnerabilities.
 - `npm.cmd run build` passed, compiled Cloud Functions, and generated the PWA service worker.
 - Browser smoke test on `http://127.0.0.1:3000` returned HTTP 200 and rendered FireWatch, Local demo mode, report form, 3 report cards, Leaflet map tiles, and marker clustering.
 - `npm.cmd run test:rules` passed: 1 test suite, 8 tests. Firebase CLI warned that the user was not authenticated, but the local emulator test completed successfully.
-- `npm.cmd run test:functions` passed: 1 test suite, 9 tests. Firebase CLI warned that the user was not authenticated, and the Admin SDK emitted a metadata lookup warning while using the emulator, but the local emulator test completed successfully.
+- `npm.cmd run test:storage` passed: 1 test suite, 5 tests. Firebase CLI warned that the user was not authenticated, but the local emulator test completed successfully.
+- `npm.cmd run test:functions` passed: 1 test suite, 11 tests. Firebase CLI warned that the user was not authenticated, and the Admin SDK emitted a metadata lookup warning while using the emulator, but the local emulator test completed successfully.

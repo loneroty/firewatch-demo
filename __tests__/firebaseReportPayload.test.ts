@@ -35,10 +35,10 @@ describe("Firebase report payload helpers", () => {
 
   it("rejects unsafe Storage path parts", () => {
     expect(() => buildReportImagePath("user/a", "image-1.jpg")).toThrow(
-      "Authenticated user id"
+      "user id"
     );
     expect(() => buildReportImagePath("user-a", "../image.jpg")).toThrow(
-      "Report image id"
+      "image id"
     );
   });
 
@@ -87,7 +87,7 @@ describe("Firebase report payload helpers", () => {
     });
 
     expect(() => readCreateReportCallableResponse({ reportId: 1 })).toThrow(
-      "Backend did not return"
+      "callable createReport"
     );
   });
 
@@ -97,17 +97,21 @@ describe("Firebase report payload helpers", () => {
         code: "functions/resource-exhausted",
         message: "Report rate limit exceeded."
       })
-    ).toContain("10 reports");
+    ).toContain("10 ครั้ง");
 
     expect(
       mapCreateReportError({
         code: "storage/unauthorized",
         message: "User does not have permission."
       })
-    ).toContain("not allowed");
+    ).toContain("อัปโหลดรูปไม่ได้");
 
-    expect(mapCreateReportError(new Error("Firebase App Check is not configured."))).toBe(
-      "Firebase App Check is not configured."
+    expect(
+      mapCreateReportError(
+        new Error("ยังไม่ได้ตั้งค่า App Check สำหรับ Firebase backend")
+      )
+    ).toBe(
+      "ยังไม่ได้ตั้งค่า App Check สำหรับ Firebase backend"
     );
   });
 });

@@ -23,3 +23,8 @@ The format is based on Keep a Changelog.
 - Firebase backend client report flow that signs in anonymously, checks App Check, uploads photos to Storage, and calls callable `createReport` instead of writing reports directly.
 - Firebase Storage Rules and emulator-backed tests for authenticated user-owned report image uploads, image content type, file size, and blocked deletes.
 - Client report payload helper tests for Storage path construction, `gs://` payload shaping, callable response parsing, and readable backend error mapping.
+
+### Changed
+
+- Updated Phase 3 demo-readiness documentation for runtime modes, Firebase setup, generated files, and competition-day smoke testing.
+- Improved Firebase backend report error messages in Thai for App Check, config, anonymous auth, Storage upload, callable Function rejection, rate limit, and invalid payload cases.

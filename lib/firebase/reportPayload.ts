@@ -55,13 +55,21 @@ function readErrorMessage(error: unknown): string | null {
   return null;
 }
 
+function isFirebaseStorageErrorCode(code: string | null): boolean {
+  return typeof code === "string" && code.startsWith("storage/");
+}
+
+function isFirebaseAuthErrorCode(code: string | null): boolean {
+  return typeof code === "string" && code.startsWith("auth/");
+}
+
 export function buildReportImagePath(uid: string, imageId: string): string {
   if (!uid || uid.includes("/")) {
-    throw new Error("Authenticated user id is not valid for a storage path.");
+    throw new Error("user id จาก Firebase Auth ไม่ถูกต้องสำหรับ Storage path");
   }
 
   if (!/^[A-Za-z0-9._-]+$/.test(imageId)) {
-    throw new Error("Report image id is not valid.");
+    throw new Error("image id สำหรับรายงานไม่ถูกต้อง");
   }
 
   return `reportImages/${uid}/${imageId}`;
@@ -70,7 +78,7 @@ export function buildReportImagePath(uid: string, imageId: string): string {
 export function buildGsReportImageUrl(bucket: string, path: string): string {
   const normalizedBucket = bucket.replace(/^gs:\/\//, "").replace(/\/+$/, "");
   if (!normalizedBucket || normalizedBucket.includes("/")) {
-    throw new Error("Firebase Storage bucket is not configured correctly.");
+    throw new Error("Firebase Storage bucket ยังตั้งค่าไม่ถูกต้อง");
   }
 
   return `gs://${normalizedBucket}/${path}`;
@@ -96,7 +104,7 @@ export function readCreateReportCallableResponse(
   data: unknown
 ): CreateReportCallableResponse {
   if (!isRecord(data) || typeof data.reportId !== "string") {
-    throw new Error("Backend did not return a report id.");
+    throw new Error("callable createReport ไม่ได้คืนค่า report id");
   }
 
   const rateLimit = data.rateLimit;
@@ -106,7 +114,7 @@ export function readCreateReportCallableResponse(
     typeof rateLimit.count !== "number" ||
     typeof rateLimit.limit !== "number"
   ) {
-    throw new Error("Backend did not return rate limit metadata.");
+    throw new Error("callable createReport ไม่ได้คืนข้อมูล rate limit");
   }
 
   return {
@@ -138,27 +146,43 @@ export function mapCreateReportError(error: unknown): string {
   const code = readErrorCode(error);
   const message = readErrorMessage(error);
 
-  if (message?.includes("App Check") || message?.includes("not configured")) {
+  if (
+    message?.includes("App Check") ||
+    message?.includes("ยังตั้งค่า") ||
+    message?.includes("ตั้งค่าไม่ครบ")
+  ) {
     return message;
+  }
+
+  if (isFirebaseAuthErrorCode(code)) {
+    return "เข้าสู่ระบบแบบ anonymous ไม่สำเร็จ: ตรวจว่าเปิด Anonymous Auth ใน Firebase แล้วลองใหม่";
   }
 
   switch (code) {
     case "unauthenticated":
-      return "Sign in is required before sending a report.";
+      return "ยังไม่ได้เข้าสู่ระบบ จึงส่งรายงานผ่าน Firebase backend ไม่ได้";
     case "resource-exhausted":
-      return "You have reached 10 reports in this hour. Please try again later.";
+      return "ส่งรายงานครบ 10 ครั้งใน 1 ชั่วโมงแล้ว กรุณาลองใหม่ภายหลัง";
     case "failed-precondition":
-      return "The report session does not match the signed-in user. Please refresh and try again.";
+      return "ข้อมูลผู้ใช้ของรายงานไม่ตรงกับ session ปัจจุบัน กรุณารีเฟรชแล้วลองใหม่";
     case "invalid-argument":
-      return "The report details are invalid. Check location, category, severity, note length, and photo.";
+      return "ข้อมูลรายงานไม่ถูกต้อง: ตรวจพิกัด ประเภท ความรุนแรง ความยาวข้อความ และรูปภาพ";
     case "permission-denied":
     case "storage/unauthorized":
-      return "This account is not allowed to upload the selected photo path.";
+      return "อัปโหลดรูปไม่ได้: บัญชีนี้ไม่มีสิทธิ์เขียน path รูปที่เลือก";
     case "storage/canceled":
-      return "Photo upload was canceled before the report was sent.";
+      return "การอัปโหลดรูปถูกยกเลิกก่อนส่งรายงาน";
     case "storage/retry-limit-exceeded":
-      return "Photo upload timed out. Please try again on a stable connection.";
+      return "อัปโหลดรูปไม่สำเร็จเพราะเครือข่ายไม่เสถียร กรุณาลองใหม่";
     default:
-      return message || "Could not send the report. Please try again.";
+      if (isFirebaseStorageErrorCode(code)) {
+        return "อัปโหลดรูปไป Firebase Storage ไม่สำเร็จ กรุณาลองใหม่";
+      }
+
+      if (code) {
+        return "callable createReport ส่งรายงานไม่สำเร็จ กรุณาตรวจข้อมูลแล้วลองใหม่";
+      }
+
+      return message || "ส่งรายงานไม่สำเร็จ กรุณาลองใหม่";
   }
 }
