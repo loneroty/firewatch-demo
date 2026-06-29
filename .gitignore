@@ -21,3 +21,7 @@ public/fallback-*.js
 # Local logs/build cache
 .next-dev.*.log
 tsconfig.tsbuildinfo
+
+# Local logs/build cache
+.next-dev.*.log
+tsconfig.tsbuildinfo

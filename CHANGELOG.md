@@ -15,3 +15,6 @@ The format is based on Keep a Changelog.
 - Basic GitHub Actions CI for lint, typecheck, test, and build.
 - Next.js 16 webpack build setup for compatibility with `@ducanh2912/next-pwa`.
 - Dependency overrides for vulnerable transitive PostCSS, serialize-javascript, and js-yaml versions.
+- Phase 2 Firestore Security Rules with emulator-backed rules tests.
+- Firebase emulator configuration and CI Java setup for rules testing.
+- Incident runbook for spam, outage, and rules deployment incidents.

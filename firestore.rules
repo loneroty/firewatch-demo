@@ -1,0 +1,199 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function isValidString(value, maxLength) {
+      return value is string && value.size() <= maxLength;
+    }
+
+    function reportKeys() {
+      return [
+        'id',
+        'lat',
+        'lng',
+        'geohash',
+        'photoURL',
+        'category',
+        'severity',
+        'createdAt',
+        'userId',
+        'verificationStatus',
+        'confirmedByReportIds',
+        'isThrottled',
+        'flaggedCount',
+        'moderationStatus',
+        'addressLabel',
+        'notes'
+      ];
+    }
+
+    function validReportCategory(category) {
+      return category in [
+        'open_burning',
+        'wildfire_smoke',
+        'industrial_smoke',
+        'other'
+      ];
+    }
+
+    function validVerificationStatus(status) {
+      return status in ['รอการยืนยัน', 'ยืนยันแล้ว', 'ถูกปฏิเสธ'];
+    }
+
+    function validModerationStatus(status) {
+      return status in ['ปกติ', 'ถูกซ่อน', 'รอตรวจสอบ'];
+    }
+
+    function validReportShape() {
+      return request.resource.data.keys().hasAll(reportKeys())
+        && request.resource.data.keys().hasOnly(reportKeys())
+        && request.resource.data.id is string
+        && request.resource.data.lat is number
+        && request.resource.data.lat >= -90
+        && request.resource.data.lat <= 90
+        && request.resource.data.lng is number
+        && request.resource.data.lng >= -180
+        && request.resource.data.lng <= 180
+        && isValidString(request.resource.data.geohash, 12)
+        && isValidString(request.resource.data.photoURL, 2048)
+        && validReportCategory(request.resource.data.category)
+        && request.resource.data.severity in [1, 2, 3]
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.userId is string
+        && validVerificationStatus(request.resource.data.verificationStatus)
+        && request.resource.data.confirmedByReportIds is list
+        && request.resource.data.confirmedByReportIds.size() <= 25
+        && request.resource.data.isThrottled is bool
+        && request.resource.data.flaggedCount is int
+        && request.resource.data.flaggedCount >= 0
+        && validModerationStatus(request.resource.data.moderationStatus)
+        && isValidString(request.resource.data.addressLabel, 160)
+        && isValidString(request.resource.data.notes, 500);
+    }
+
+    function validReportCreate(reportId) {
+      return signedIn()
+        && validReportShape()
+        && request.resource.data.id == reportId
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.verificationStatus == 'รอการยืนยัน'
+        && request.resource.data.confirmedByReportIds.size() == 0
+        && request.resource.data.isThrottled == false
+        && request.resource.data.flaggedCount == 0
+        && request.resource.data.moderationStatus == 'ปกติ';
+    }
+
+    function validReportOwnerUpdate() {
+      let changedKeys = request.resource.data.diff(resource.data).affectedKeys();
+      return signedIn()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.id == resource.data.id
+        && validReportShape()
+        && changedKeys.hasOnly(['photoURL', 'addressLabel', 'notes']);
+    }
+
+    function ownerUserKeys() {
+      return ['id', 'authProvider', 'displayName', 'homeGeohash', 'createdAt'];
+    }
+
+    function adminUserKeys() {
+      return [
+        'id',
+        'authProvider',
+        'displayName',
+        'reputationScore',
+        'reportsCount',
+        'verifiedReportsCount',
+        'rejectedReportsCount',
+        'homeGeohash',
+        'isSuspended',
+        'createdAt'
+      ];
+    }
+
+    function validAuthProvider(provider) {
+      return provider in ['anonymous', 'line', 'phone'];
+    }
+
+    function validOwnerUserCreate(userId) {
+      return isOwner(userId)
+        && request.resource.data.keys().hasAll(ownerUserKeys())
+        && request.resource.data.keys().hasOnly(ownerUserKeys())
+        && request.resource.data.id == userId
+        && validAuthProvider(request.resource.data.authProvider)
+        && isValidString(request.resource.data.displayName, 80)
+        && isValidString(request.resource.data.homeGeohash, 12)
+        && request.resource.data.createdAt is timestamp;
+    }
+
+    function validOwnerUserUpdate(userId) {
+      let changedKeys = request.resource.data.diff(resource.data).affectedKeys();
+      return isOwner(userId)
+        && request.resource.data.id == resource.data.id
+        && changedKeys.hasOnly(['displayName', 'homeGeohash'])
+        && isValidString(request.resource.data.displayName, 80)
+        && isValidString(request.resource.data.homeGeohash, 12);
+    }
+
+    function validAdminUserWrite(userId) {
+      return isAdmin()
+        && request.resource.data.keys().hasAll(adminUserKeys())
+        && request.resource.data.keys().hasOnly(adminUserKeys())
+        && request.resource.data.id == userId
+        && validAuthProvider(request.resource.data.authProvider)
+        && isValidString(request.resource.data.displayName, 80)
+        && request.resource.data.reputationScore is int
+        && request.resource.data.reputationScore >= 0
+        && request.resource.data.reportsCount is int
+        && request.resource.data.reportsCount >= 0
+        && request.resource.data.verifiedReportsCount is int
+        && request.resource.data.verifiedReportsCount >= 0
+        && request.resource.data.rejectedReportsCount is int
+        && request.resource.data.rejectedReportsCount >= 0
+        && isValidString(request.resource.data.homeGeohash, 12)
+        && request.resource.data.isSuspended is bool
+        && request.resource.data.createdAt is timestamp;
+    }
+
+    match /reports/{reportId} {
+      allow read: if true;
+      allow create: if validReportCreate(reportId);
+      allow update: if validReportOwnerUpdate();
+      allow delete: if false;
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if validOwnerUserCreate(userId) || validAdminUserWrite(userId);
+      allow update: if validOwnerUserUpdate(userId) || validAdminUserWrite(userId);
+      allow delete: if false;
+
+      match /adminOnly/{document=**} {
+        allow read, write: if isAdmin();
+      }
+    }
+
+    match /admins/{uid} {
+      allow read: if isOwner(uid);
+      allow write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -37,6 +37,12 @@ npm run build
 
 โปรเจกต์นี้ใช้ Next 16 ร่วมกับ `@ducanh2912/next-pwa` จึงบังคับ `next dev --webpack` และ `next build --webpack` ใน scripts เพื่อให้ PWA plugin ทำงานกับ webpack ได้ถูกต้อง
 
+`npm run test` จะรันทั้ง unit tests และ Firestore Security Rules tests ผ่าน Firebase emulator ถ้าต้องการรัน rules tests อย่างเดียวใช้:
+
+```bash
+npm run test:rules
+```
+
 ## Firebase env
 
 คัดลอก `.env.example` เป็น `.env.local` แล้วใส่ค่า `NEXT_PUBLIC_FIREBASE_*` เมื่อมี Firebase project จริง ห้าม commit `.env.local`
