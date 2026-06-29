@@ -17,3 +17,7 @@ public/sw.js
 public/workbox-*.js
 public/worker-*.js
 public/fallback-*.js
+
+# Local logs/build cache
+.next-dev.*.log
+tsconfig.tsbuildinfo
