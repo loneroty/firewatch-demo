@@ -4,12 +4,12 @@ FireWatch เป็น MVP สำหรับแพลตฟอร์ม crowdso
 
 ## สถานะเฟส
 
-เฟสปัจจุบัน: Phase 3 demo readiness
+เฟสปัจจุบัน: Phase 4 demo package
 
 - รัน local ได้โดยไม่ต้องมี Firebase project ผ่าน Local demo mode
 - รองรับ Firebase public env เมื่อพร้อมต่อ backend จริง
 - มี Firestore Security Rules baseline และ Cloud Function สำหรับสร้าง report จริง
-- งาน Phase 3 รอบนี้เน้นเสถียรภาพ เอกสาร smoke test และข้อความ error สำหรับวันแข่ง ไม่เพิ่ม feature ใหญ่
+- งาน Phase 4 รอบนี้เพิ่มเอกสาร demo package สำหรับใช้แข่งและพรีเซนต์ ไม่เพิ่ม feature ใหญ่
 - ยังไม่รวม Line Login, Push Notification จริง, Admin Dashboard เต็มรูป หรือ Lighthouse gate
 
 ## เริ่มใช้งาน
@@ -27,6 +27,39 @@ npm run dev
 npm.cmd install
 npm.cmd run dev
 ```
+
+## Competition Demo Quick Start
+
+สำหรับ demo บนเครื่องกรรมการหรือเครื่องพรีเซนต์ ใช้ Local demo mode เป็น path หลักเพราะไม่ต้องมี Firebase config:
+
+```powershell
+npm.cmd install
+npm.cmd run dev
+```
+
+เปิด:
+
+```text
+http://localhost:3000
+```
+
+ถ้าไม่มี Firebase public env ครบ แอปจะเข้า Local demo mode โดยอัตโนมัติ ใช้ localStorage, compressed data URL, map/list/report form และ client-side demo rate limit ได้ทันที
+
+ก่อนขึ้นเวทีให้ verify:
+
+```powershell
+npm.cmd run lint
+npm.cmd run typecheck
+npm.cmd run test
+npm.cmd run build
+npm.cmd audit
+```
+
+เอกสารสำหรับวันแข่ง:
+
+- `docs/DEMO_SCRIPT.md` สคริปต์พูด 3-5 นาที
+- `docs/JUDGING_NOTES.md` ประเด็นสำหรับตอบกรรมการ
+- `docs/DEMO_CHECKLIST.md` checklist ก่อนขึ้นเวทีและ fallback
 
 ## คำสั่งตรวจสอบ
 

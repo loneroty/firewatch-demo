@@ -10,7 +10,7 @@
 - Phase 2 security baseline has been merged into `main`.
 - Firestore Security Rules exist in `firestore.rules` and are covered by emulator-backed tests in `firestore.rules.test.ts`.
 - Firebase emulator config exists in `firebase.json`; Firestore runs on `127.0.0.1:8080`, Functions on `127.0.0.1:5001`, Storage on `127.0.0.1:9199`, and Auth on `127.0.0.1:9099`.
-- Phase 3 demo-readiness work is on branch `feature/phase-3-demo-readiness`.
+- Phase 4 demo-package work is on branch `feature/phase-4-demo-package`.
 - Cloud Functions source now lives under `functions/`.
 - `createReport` is the intended production path for new report creation. It uses `auth.uid` as the source of truth, requires App Check on the callable function, assigns `createdAt` server-side, rejects server-controlled fields, validates `gs://` report image paths against `reportImages/{auth.uid}/...`, and enforces the hourly report rate limit with a Firestore transaction.
 - Server-side hourly buckets are stored at `rateLimits/{uid}/hours/{yyyyMMddHH}`.
@@ -19,7 +19,7 @@
 
 ## Current Scope
 
-- Phase 3 current slice: demo readiness, stability checks, manual smoke test documentation, and readable UX error messages. No large feature work is in scope.
+- Phase 4 current slice: demo package documentation for competition presentation. No large feature work, architecture change, deployment, or business-logic change is in scope.
 - Full Line Login, Push Notification, Admin Dashboard UI, Remote Config, Sentry, and Firebase Performance Monitoring are still pending.
 
 ## Data Ownership Notes
@@ -37,3 +37,4 @@
 - Firebase backend mode requires public Firebase env values, Anonymous Auth enabled, App Check configured for the demo domain, Storage Rules deployed after tests, and callable `createReport` deployed in `asia-southeast1`.
 - Generated files and logs observed locally are ignored by Git: `.next/`, `public/sw.js`, `public/workbox-*.js`, `functions/lib/`, `firestore-debug.log`, `.next-dev*.log`, and `tsconfig.tsbuildinfo`.
 - Manual smoke test coverage for demo day lives in `docs/TESTING.md`.
+- Phase 4 presentation package lives in `docs/DEMO_SCRIPT.md`, `docs/JUDGING_NOTES.md`, and `docs/DEMO_CHECKLIST.md`.
