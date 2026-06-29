@@ -18,3 +18,5 @@ The format is based on Keep a Changelog.
 - Phase 2 Firestore Security Rules with emulator-backed rules tests.
 - Firebase emulator configuration and CI Java setup for rules testing.
 - Incident runbook for spam, outage, and rules deployment incidents.
+- Cloud Function `createReport` with server-side payload validation, server-owned report fields, and transaction-backed hourly rate limiting.
+- Emulator-backed Cloud Function tests for valid reports, unauthenticated requests, invalid payloads, forbidden fields, userId mismatch, and rate-limit behavior.

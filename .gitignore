@@ -17,6 +17,8 @@ public/sw.js
 public/workbox-*.js
 public/worker-*.js
 public/fallback-*.js
+functions/lib/
+firestore-debug.log
 
 # Local logs/build cache
 .next-dev.*.log

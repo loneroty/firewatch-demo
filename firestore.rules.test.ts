@@ -138,10 +138,10 @@ describe("firestore security rules", () => {
     );
   });
 
-  it("allows authenticated users to create only their own reports", async () => {
+  it("blocks direct authenticated report creates so clients must use Cloud Functions", async () => {
     const userDb = authedContext("user-a").firestore();
 
-    await assertSucceeds(
+    await assertFails(
       setDoc(
         doc(userDb, "reports", "report-owned"),
         reportData({ id: "report-owned", userId: "user-a" })
