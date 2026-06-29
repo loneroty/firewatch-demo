@@ -25,3 +25,8 @@ tsconfig.tsbuildinfo
 # Local logs/build cache
 .next-dev.*.log
 tsconfig.tsbuildinfo
+
+# Firebase emulator logs
+firestore-debug.log
+ui-debug.log
+firebase-debug.log
