@@ -35,6 +35,13 @@ export interface Report {
   notes: string;
 }
 
+export interface ReportImageMetadata {
+  contentType: "image/jpeg" | "image/png" | "image/webp";
+  sizeBytes: number;
+  width?: number;
+  height?: number;
+}
+
 export interface UserProfile {
   id: string;
   authProvider: "anonymous" | "line" | "phone";
@@ -59,6 +66,8 @@ export interface ReportDraft {
   category: ReportCategory;
   severity: Severity;
   photoURL: string;
+  photoBlob?: Blob;
+  imageMetadata?: ReportImageMetadata;
   notes: string;
   addressLabel: string;
 }

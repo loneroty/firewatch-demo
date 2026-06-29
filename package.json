@@ -12,9 +12,10 @@
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit && npm run typecheck:functions",
     "typecheck:functions": "tsc -p functions/tsconfig.json --noEmit",
-    "test": "npm run test:unit && npm run test:rules && npm run test:functions",
+    "test": "npm run test:unit && npm run test:rules && npm run test:storage && npm run test:functions",
     "test:unit": "jest --runInBand --config jest.config.cjs",
     "test:rules": "firebase emulators:exec --project firewatch-rules-test --only firestore \"jest --runInBand --config jest.rules.config.cjs\"",
+    "test:storage": "firebase emulators:exec --project firewatch-storage-test --only storage \"jest --runInBand --config jest.storage.config.cjs\"",
     "test:functions": "firebase emulators:exec --project firewatch-functions-test --only firestore \"jest --runInBand --config jest.functions.config.cjs\"",
     "test:watch": "jest --watch --config jest.config.cjs"
   },

@@ -2,12 +2,12 @@
 
 import { Camera, LocateFixed, Send } from "lucide-react";
 import { FormEvent, useState } from "react";
-import { compressImageToDataUrl } from "@/lib/imageCompression";
+import { compressImageForReport } from "@/lib/imageCompression";
 import { categoryOptions, severityOptions } from "@/lib/reportLabels";
 import type { ReportCategory, ReportDraft, Severity } from "@/lib/types";
 
 interface ReportFormProps {
-  onSubmit: (draft: ReportDraft) => void;
+  onSubmit: (draft: ReportDraft) => Promise<void> | void;
 }
 
 const defaultLocation = {
@@ -79,13 +79,15 @@ export function ReportForm({ onSubmit }: ReportFormProps) {
     setIsSubmitting(true);
 
     try {
-      const photoURL = await compressImageToDataUrl(photoFile);
-      onSubmit({
+      const photo = await compressImageForReport(photoFile);
+      await onSubmit({
         lat: parsedLat,
         lng: parsedLng,
         category,
         severity,
-        photoURL,
+        photoURL: photo.dataUrl,
+        photoBlob: photo.blob,
+        imageMetadata: photo.metadata,
         notes,
         addressLabel
       });

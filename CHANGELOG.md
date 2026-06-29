@@ -20,3 +20,6 @@ The format is based on Keep a Changelog.
 - Incident runbook for spam, outage, and rules deployment incidents.
 - Cloud Function `createReport` with server-side payload validation, server-owned report fields, and transaction-backed hourly rate limiting.
 - Emulator-backed Cloud Function tests for valid reports, unauthenticated requests, invalid payloads, forbidden fields, userId mismatch, and rate-limit behavior.
+- Firebase backend client report flow that signs in anonymously, checks App Check, uploads photos to Storage, and calls callable `createReport` instead of writing reports directly.
+- Firebase Storage Rules and emulator-backed tests for authenticated user-owned report image uploads, image content type, file size, and blocked deletes.
+- Client report payload helper tests for Storage path construction, `gs://` payload shaping, callable response parsing, and readable backend error mapping.

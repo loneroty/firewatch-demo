@@ -1,5 +1,13 @@
 "use client";
 
+import type { ReportImageMetadata } from "@/lib/types";
+
+export interface CompressedReportImage {
+  dataUrl: string;
+  blob: Blob;
+  metadata: ReportImageMetadata;
+}
+
 function canvasToBlob(
   canvas: HTMLCanvasElement,
   type: string,
@@ -9,7 +17,7 @@ function canvasToBlob(
     canvas.toBlob(
       (blob) => {
         if (!blob) {
-          reject(new Error("ไม่สามารถบีบอัดรูปได้"));
+          reject(new Error("Could not compress the image."));
           return;
         }
         resolve(blob);
@@ -27,20 +35,20 @@ function blobToDataUrl(blob: Blob): Promise<string> {
       if (typeof reader.result === "string") {
         resolve(reader.result);
       } else {
-        reject(new Error("อ่านรูปไม่สำเร็จ"));
+        reject(new Error("Could not read the image."));
       }
     };
-    reader.onerror = () => reject(new Error("อ่านรูปไม่สำเร็จ"));
+    reader.onerror = () => reject(new Error("Could not read the image."));
     reader.readAsDataURL(blob);
   });
 }
 
-export async function compressImageToDataUrl(
+export async function compressImageForReport(
   file: File,
   maxBytes = 500 * 1024
-): Promise<string> {
+): Promise<CompressedReportImage> {
   if (!file.type.startsWith("image/")) {
-    throw new Error("ไฟล์ต้องเป็นรูปภาพ");
+    throw new Error("The selected file must be an image.");
   }
 
   const bitmap = await createImageBitmap(file);
@@ -52,7 +60,7 @@ export async function compressImageToDataUrl(
 
   const context = canvas.getContext("2d");
   if (!context) {
-    throw new Error("เบราว์เซอร์ไม่รองรับการบีบอัดรูป");
+    throw new Error("This browser does not support image compression.");
   }
 
   context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
@@ -71,8 +79,25 @@ export async function compressImageToDataUrl(
   }
 
   if (bestBlob.size > maxBytes) {
-    throw new Error("รูปยังใหญ่เกิน 500KB หลังบีบอัด");
+    throw new Error("The image is still larger than 500KB after compression.");
   }
 
-  return blobToDataUrl(bestBlob);
+  return {
+    dataUrl: await blobToDataUrl(bestBlob),
+    blob: bestBlob,
+    metadata: {
+      contentType: "image/jpeg",
+      sizeBytes: bestBlob.size,
+      width: canvas.width,
+      height: canvas.height
+    }
+  };
+}
+
+export async function compressImageToDataUrl(
+  file: File,
+  maxBytes = 500 * 1024
+): Promise<string> {
+  const compressed = await compressImageForReport(file, maxBytes);
+  return compressed.dataUrl;
 }

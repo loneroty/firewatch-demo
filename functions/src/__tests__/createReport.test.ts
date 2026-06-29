@@ -273,6 +273,53 @@ describe("createReportForRequest", () => {
     );
   });
 
+  it("accepts report image gs URLs only when the path belongs to auth.uid", async () => {
+    const result = await createReportForRequest(
+      {
+        authUid: "user-a",
+        payload: validPayload({
+          photoURL: "gs://firewatch-functions-test/reportImages/user-a/report-image.jpg"
+        })
+      },
+      { db, now: NOW }
+    );
+
+    const reportSnapshot = await db.doc(`reports/${result.reportId}`).get();
+    expect(reportSnapshot.get("photoURL")).toBe(
+      "gs://firewatch-functions-test/reportImages/user-a/report-image.jpg"
+    );
+  });
+
+  it("rejects report image gs URLs outside the expected path or owner uid", async () => {
+    await expectReportError(
+      () =>
+        createReportForRequest(
+          {
+            authUid: "user-a",
+            payload: validPayload({
+              photoURL: "gs://firewatch-functions-test/reportImages/user-b/report-image.jpg"
+            })
+          },
+          { db, now: NOW }
+        ),
+      "failed-precondition"
+    );
+
+    await expectReportError(
+      () =>
+        createReportForRequest(
+          {
+            authUid: "user-a",
+            payload: validPayload({
+              photoURL: "gs://firewatch-functions-test/user-a/report-image.jpg"
+            })
+          },
+          { db, now: NOW }
+        ),
+      "invalid-argument"
+    );
+  });
+
   it("rejects forbidden server-controlled and admin-controlled fields", async () => {
     await expectReportError(
       () =>

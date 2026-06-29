@@ -15,6 +15,12 @@ Rules tests can be run directly with:
 npm run test:rules
 ```
 
+Storage Rules tests can be run directly with:
+
+```bash
+npm run test:storage
+```
+
 Cloud Function report tests can be run directly with:
 
 ```bash
@@ -31,6 +37,8 @@ npm run test:functions
 - Hourly report rate limit.
 - Firestore reports are publicly readable but unauthenticated writes are blocked.
 - Direct client report creates are blocked; real report creation must go through Cloud Function `createReport`.
+- Storage Rules allow authenticated report image uploads only to `reportImages/{auth.uid}/{imageId}`.
+- Storage Rules block unauthenticated uploads, uploads to another user's path, non-image uploads, over-limit files, and client deletes.
 - Client writes cannot change verification/moderation fields on reports.
 - Users cannot read or write other users' profile documents.
 - Profile owners can update only public profile fields.
@@ -40,7 +48,9 @@ npm run test:functions
 - Cloud Function report creation accepts valid authenticated payloads.
 - Cloud Function rejects unauthenticated requests.
 - Cloud Function rejects invalid lat/lng, category, severity, over-limit text/photo metadata, userId mismatch, and server-controlled fields.
+- Cloud Function validates `gs://` report image URLs so the path must be `reportImages/{auth.uid}/{imageId}`.
 - Cloud Function enforces 10 reports/hour per `auth.uid` using transaction-backed `rateLimits/{uid}/hours/{yyyyMMddHH}` buckets.
+- Client backend payload helpers build Storage paths, `gs://` report payloads, callable response parsing, and user-facing backend error messages without including local-only image blobs or server-owned fields.
 
 ## Last Verified Run
 

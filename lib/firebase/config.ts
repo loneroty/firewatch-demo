@@ -36,6 +36,18 @@ export function getFirebasePublicConfig(): FirebasePublicConfig | null {
   };
 }
 
+export function getFirebaseAppCheckSiteKey(): string | null {
+  return process.env.NEXT_PUBLIC_FIREBASE_APPCHECK_SITE_KEY || null;
+}
+
+export function isFirebaseBackendConfigured(): boolean {
+  return getFirebasePublicConfig() !== null;
+}
+
+export function shouldUseFirebaseEmulators(): boolean {
+  return process.env.NEXT_PUBLIC_FIREBASE_USE_EMULATORS === "true";
+}
+
 export function getRuntimeModeLabel(): "Firebase ready" | "Local demo" {
-  return getFirebasePublicConfig() ? "Firebase ready" : "Local demo";
+  return isFirebaseBackendConfigured() ? "Firebase ready" : "Local demo";
 }

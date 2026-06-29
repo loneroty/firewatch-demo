@@ -148,9 +148,49 @@ function validateSeverity(value: unknown): Severity {
   return value;
 }
 
-function validatePhotoURL(value: unknown): string {
+function validateGsReportImageURL(photoURL: string, authUid: string): void {
+  const withoutScheme = photoURL.slice("gs://".length);
+  const firstSlashIndex = withoutScheme.indexOf("/");
+
+  if (firstSlashIndex <= 0) {
+    throw new ReportFunctionError(
+      "invalid-argument",
+      "photoURL gs:// bucket is invalid."
+    );
+  }
+
+  const bucket = withoutScheme.slice(0, firstSlashIndex);
+  const path = withoutScheme.slice(firstSlashIndex + 1);
+  const pathParts = path.split("/");
+  if (
+    !/^[A-Za-z0-9._-]+$/.test(bucket) ||
+    pathParts.length !== 3 ||
+    pathParts[0] !== "reportImages" ||
+    pathParts[2].length === 0 ||
+    !/^[A-Za-z0-9._-]+$/.test(pathParts[2])
+  ) {
+    throw new ReportFunctionError(
+      "invalid-argument",
+      "photoURL must point to gs://<bucket>/reportImages/<uid>/<imageId>."
+    );
+  }
+
+  if (pathParts[1] !== authUid) {
+    throw new ReportFunctionError(
+      "failed-precondition",
+      "photoURL owner path must match auth.uid."
+    );
+  }
+}
+
+function validatePhotoURL(value: unknown, authUid: string): string {
   const photoURL = requireString(value, "photoURL", 2048);
-  if (!photoURL.startsWith("https://") && !photoURL.startsWith("gs://")) {
+  if (photoURL.startsWith("gs://")) {
+    validateGsReportImageURL(photoURL, authUid);
+    return photoURL;
+  }
+
+  if (!photoURL.startsWith("https://")) {
     throw new ReportFunctionError(
       "invalid-argument",
       "photoURL must be an https:// or gs:// URL."
@@ -247,7 +287,7 @@ export function validateCreateReportPayload(
     lng: validateCoordinate(payload.lng, "lng"),
     category: validateCategory(payload.category),
     severity: validateSeverity(payload.severity),
-    photoURL: validatePhotoURL(payload.photoURL),
+    photoURL: validatePhotoURL(payload.photoURL, authUid),
     addressLabel: requireString(payload.addressLabel, "addressLabel", 160) || "ไม่ระบุพื้นที่",
     notes: requireString(payload.notes, "notes", 500),
     imageMetadata: validateImageMetadata(payload.imageMetadata)

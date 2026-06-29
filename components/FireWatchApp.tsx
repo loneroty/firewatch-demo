@@ -6,7 +6,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ReportForm } from "@/components/ReportForm";
 import { ReportList } from "@/components/ReportList";
 import { SummaryMetric } from "@/components/SummaryMetric";
-import { getRuntimeModeLabel } from "@/lib/firebase/config";
+import { createReportInBackend } from "@/lib/firebase/reportClient";
+import {
+  getRuntimeModeLabel,
+  isFirebaseBackendConfigured
+} from "@/lib/firebase/config";
 import {
   getOrCreateLocalUserId,
   loadStoredReports,
@@ -14,6 +18,7 @@ import {
 } from "@/lib/localReportStore";
 import { applyVerificationToReputation, evaluateHourlyRateLimit } from "@/lib/verification/reputation";
 import { createLocalReport } from "@/lib/reportFactory";
+import { createSeedReports } from "@/lib/seedReports";
 import type { Report, ReportDraft, VerificationStatus } from "@/lib/types";
 
 const FireMap = dynamic(
@@ -38,6 +43,7 @@ const statusFilters: readonly StatusFilter[] = [
 ];
 
 export function FireWatchApp() {
+  const isBackendMode = useMemo(() => isFirebaseBackendConfigured(), []);
   const [reports, setReports] = useState<Report[]>([]);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ทั้งหมด");
@@ -53,22 +59,24 @@ export function FireWatchApp() {
         return;
       }
 
-      const storedReports = loadStoredReports();
+      const storedReports = isBackendMode ? createSeedReports() : loadStoredReports();
       setReports(storedReports);
       setSelectedReportId(storedReports[0]?.id ?? null);
-      setLocalUserId(getOrCreateLocalUserId());
+      if (!isBackendMode) {
+        setLocalUserId(getOrCreateLocalUserId());
+      }
     });
 
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [isBackendMode]);
 
   useEffect(() => {
-    if (reports.length > 0) {
+    if (!isBackendMode && reports.length > 0) {
       saveStoredReports(reports);
     }
-  }, [reports]);
+  }, [isBackendMode, reports]);
 
   const visibleReports = useMemo(() => {
     const notHidden = reports.filter((report) => report.moderationStatus !== "ถูกซ่อน");
@@ -93,7 +101,18 @@ export function FireWatchApp() {
   const hiddenCount = reports.filter((report) => report.moderationStatus === "ถูกซ่อน").length;
 
   const handleCreateReport = useCallback(
-    (draft: ReportDraft) => {
+    async (draft: ReportDraft) => {
+      setSystemMessage(null);
+
+      if (isBackendMode) {
+        const report = await createReportInBackend(draft);
+
+        setReports((currentReports) => [report, ...currentReports]);
+        setSelectedReportId(report.id);
+        setSystemMessage("Report sent through Firebase backend.");
+        return;
+      }
+
       const now = new Date();
       const rateLimit = evaluateHourlyRateLimit(localUserId, reports, now);
 
@@ -123,7 +142,7 @@ export function FireWatchApp() {
           : "บันทึกรายงานแล้ว กำลังรอรายงานใกล้เคียงช่วยยืนยัน"
       );
     },
-    [localUserId, reports, reputationScore]
+    [isBackendMode, localUserId, reports, reputationScore]
   );
 
   const handleFlagReport = useCallback((reportId: string) => {
