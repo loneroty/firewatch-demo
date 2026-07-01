@@ -18,14 +18,14 @@ const legendItems = [
 
 export function StatusLegend() {
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-0 divide-y divide-smoke-200 border-y border-smoke-200">
       {legendItems.map((item) => (
         <div
           key={item.label}
-          className="flex items-start gap-3 rounded-lg border border-smoke-200 bg-white p-3"
+          className="grid grid-cols-[18px_1fr] gap-3 py-3"
         >
           <span
-            className={`mt-1 h-3 w-3 shrink-0 rounded-full shadow-sm ${item.markerClassName}`}
+            className={`mt-1.5 h-3 w-3 shrink-0 rounded-full shadow-sm ${item.markerClassName}`}
           />
           <span>
             <span className="block text-sm font-semibold text-smoke-950">{item.label}</span>

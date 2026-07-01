@@ -1,66 +1,81 @@
-import { Database, Gauge, LockKeyhole, ShieldCheck, UploadCloud, Zap } from "lucide-react";
-import { SectionHeader } from "@/components/ui/SectionHeader";
-
-const securityItems = [
+const securityLayers = [
   {
-    title: "Firebase Auth",
-    description: "ใช้ anonymous session เป็นตัวตนหลักของผู้ส่งรายงานใน backend mode",
-    icon: ShieldCheck
+    layer: "Client app",
+    detail: "รับรูป พิกัด และ payload จากผู้ใช้ แต่ไม่เขียนสถานะสำคัญลง reports โดยตรง"
   },
   {
-    title: "App Check",
-    description: "ลดความเสี่ยงจาก script ที่ยิง callable function ตรงนอกแอป",
-    icon: LockKeyhole
+    layer: "Firebase Auth + App Check",
+    detail: "ใช้ anonymous session และบังคับ request มาจากแอปที่ตั้งค่าไว้ใน backend mode"
   },
   {
-    title: "Storage Rules",
-    description: "บังคับ upload รูปเฉพาะ path ของผู้ใช้และจำกัดชนิดไฟล์/ขนาด",
-    icon: UploadCloud
+    layer: "Storage Rules",
+    detail: "ให้ผู้ใช้ upload รูปได้เฉพาะ path ของตัวเอง และจำกัดชนิดไฟล์/ขนาดสำหรับ MVP"
   },
   {
-    title: "Firestore Rules",
-    description: "อ่านรายงานได้ แต่ client สร้าง report หรือแก้ field ยืนยันตรงไม่ได้",
-    icon: Database
+    layer: "Cloud Functions",
+    detail: "createReport และ confirmReport ตรวจ payload, owner, distance/time และ rate limit ฝั่ง server"
   },
   {
-    title: "Cloud Functions",
-    description: "สร้างและยืนยัน report ผ่าน server-side validation และ transaction",
-    icon: Zap
-  },
-  {
-    title: "Rate limit",
-    description: "จำกัด 10 reports ต่อชั่วโมงด้วย counter ฝั่ง server",
-    icon: Gauge
+    layer: "Firestore Rules",
+    detail: "เปิดอ่านรายงานได้ แต่ปิดทาง client เขียน reports หรือแก้ verificationStatus โดยตรง"
   }
+];
+
+const guardrails = [
+  "Rate limit 10 reports ต่อชั่วโมงด้วย hourly bucket และ transaction",
+  "confirmReport ต้องใช้ report ของผู้ยืนยันที่อยู่ใน 500m / 60 นาที",
+  "client ตั้ง confirmedByReportIds, verificationStatus หรือ admin fields เองไม่ได้",
+  "local demo แยกจาก backend mode ชัดเจน ไม่ต้องใช้ secret หรือ Firebase config"
 ];
 
 export function TrustSecuritySection() {
   return (
-    <section id="security" className="bg-slate-950 px-4 py-12 text-white">
+    <section id="security" className="scroll-mt-28 bg-[#07111f] px-4 py-16 text-white md:py-20">
       <div className="mx-auto max-w-[1440px]">
-        <SectionHeader
-          eyebrow="Trust and security"
-          title="ออกแบบให้ demo ได้จริงและคุม abuse ฝั่ง server"
-          description="ส่วนสำคัญของ production path อยู่หลัง Cloud Functions และ Firebase Rules เพื่อไม่ให้ client ตั้งสถานะสำคัญเอง"
-          inverse
-        />
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {securityItems.map((item) => {
-            const Icon = item.icon;
+        <div className="grid gap-8 lg:grid-cols-[minmax(300px,460px)_1fr]">
+          <div>
+            <p className="mb-3 text-xs font-black uppercase tracking-[0.22em] text-ember-100">
+              Trust architecture
+            </p>
+            <h2 className="text-3xl font-black tracking-tight md:text-5xl">
+              จุดที่ควบคุม abuse อยู่หลัง server
+            </h2>
+            <p className="mt-5 text-base leading-7 text-slate-300">
+              สำหรับกรรมการสายเทคนิค: production path ไม่ให้ browser ตัดสินความน่าเชื่อถือเอง
+              แต่ส่งผ่าน Firebase Rules และ Cloud Functions ที่ตรวจ payload ด้วย transaction
+            </p>
+          </div>
 
-            return (
-              <article
-                key={item.title}
-                className="rounded-lg border border-white/10 bg-white/5 p-5"
-              >
-                <span className="grid h-11 w-11 place-items-center rounded-lg bg-white/10 text-ember-200">
-                  <Icon aria-hidden="true" size={22} />
-                </span>
-                <h3 className="mt-4 text-lg font-bold text-white">{item.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-300">{item.description}</p>
-              </article>
-            );
-          })}
+          <div className="grid gap-4">
+            <div className="overflow-hidden rounded-lg border border-white/10 bg-white/[0.04]">
+              {securityLayers.map((item, index) => (
+                <div
+                  key={item.layer}
+                  className="grid gap-3 border-b border-white/10 p-4 last:border-b-0 md:grid-cols-[92px_180px_1fr] md:items-start"
+                >
+                  <span className="font-mono text-xs font-black text-ember-500">
+                    Layer {index + 1}
+                  </span>
+                  <span className="font-bold text-white">{item.layer}</span>
+                  <span className="text-sm leading-6 text-slate-300">{item.detail}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-lg border border-ember-500/20 bg-ember-500/10 p-5">
+              <p className="text-sm font-black uppercase tracking-[0.18em] text-ember-100">
+                Demo guardrails
+              </p>
+              <ul className="mt-4 grid gap-3 text-sm leading-6 text-slate-200 md:grid-cols-2">
+                {guardrails.map((item) => (
+                  <li key={item} className="flex gap-3">
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-ember-500" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
     </section>

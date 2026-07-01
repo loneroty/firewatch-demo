@@ -4,7 +4,7 @@
 
 :root {
   color-scheme: light;
-  background: #f8fafc;
+  background: #07111f;
   color: #0f172a;
 }
 
@@ -19,6 +19,7 @@ body {
 }
 
 body {
+  background: #07111f;
   font-family:
     ui-sans-serif,
     system-ui,
@@ -26,6 +27,7 @@ body {
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
+  text-rendering: optimizeLegibility;
 }
 
 button,
@@ -33,6 +35,32 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+::selection {
+  background: rgb(249 115 22 / 0.22);
+}
+
+.field-grid {
+  background-image:
+    radial-gradient(circle at 15% 8%, rgb(249 115 22 / 0.16), transparent 30%),
+    radial-gradient(circle at 85% 12%, rgb(14 165 233 / 0.12), transparent 28%),
+    linear-gradient(90deg, rgb(148 163 184 / 0.08) 1px, transparent 1px),
+    linear-gradient(0deg, rgb(148 163 184 / 0.08) 1px, transparent 1px);
+  background-size:
+    auto,
+    auto,
+    44px 44px,
+    44px 44px;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 .leaflet-container {

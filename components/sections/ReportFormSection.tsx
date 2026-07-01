@@ -1,59 +1,76 @@
 import type { ReactNode } from "react";
-import { AlertTriangle, Send } from "lucide-react";
-import { SectionHeader } from "@/components/ui/SectionHeader";
+import { AlertTriangle } from "lucide-react";
 
 interface ReportFormSectionProps {
   systemMessage: string | null;
   children: ReactNode;
 }
 
+const intakeNotes = [
+  {
+    label: "01",
+    title: "หลักฐาน",
+    body: "แนบรูปจริงจากพื้นที่ ระบบบีบอัดก่อนส่งเพื่อให้มือถือใช้งานได้เร็วขึ้น"
+  },
+  {
+    label: "02",
+    title: "ตำแหน่ง",
+    body: "ใช้ GPS หรือกรอกพิกัดเอง เหมาะกับการสาธิตบนเวทีและการลงพื้นที่จริง"
+  },
+  {
+    label: "03",
+    title: "ตรวจฝั่ง server",
+    body: "backend mode สร้างรายงานผ่าน callable function พร้อม validation และ rate limit"
+  }
+];
+
 export function ReportFormSection({ systemMessage, children }: ReportFormSectionProps) {
   return (
-    <section id="report" className="bg-slate-950 px-4 py-12 text-white">
-      <div className="mx-auto grid max-w-[1440px] gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(360px,520px)] lg:items-start">
+    <section id="report" className="scroll-mt-28 bg-[#07111f] px-4 py-16 text-white md:py-20">
+      <div className="mx-auto grid max-w-[1440px] gap-8 lg:grid-cols-[minmax(0,0.82fr)_minmax(380px,540px)] lg:items-start">
         <div>
-          <SectionHeader
-            eyebrow="Report station"
-            title="แจ้งเหตุพร้อมพิกัดและหลักฐาน"
-            description="ฟอร์มนี้ใช้ flow เดิมทั้งหมด: local demo จะบันทึกในเครื่อง ส่วน Firebase backend mode จะอัปโหลดรูปไป Storage แล้วเรียก Cloud Function เพื่อสร้างรายงาน"
-            inverse
-            action={
-              <span className="inline-flex items-center gap-2 rounded-md bg-ember-600 px-3 py-2 text-sm font-semibold text-white">
-                <Send aria-hidden="true" size={16} />
-                Create report
-              </span>
-            }
-          />
-          <div className="mt-6 grid gap-4 sm:grid-cols-3">
-            <div className="border-l border-white/10 pl-4">
-              <p className="text-sm font-semibold text-white">รูปถ่าย</p>
-              <p className="mt-2 text-sm leading-6 text-slate-300">
-                บีบอัดก่อนส่งเพื่อลดขนาด payload
-              </p>
-            </div>
-            <div className="border-l border-white/10 pl-4">
-              <p className="text-sm font-semibold text-white">พิกัด</p>
-              <p className="mt-2 text-sm leading-6 text-slate-300">
-                ใช้ GPS หรือกรอก lat/lng เองได้
-              </p>
-            </div>
-            <div className="border-l border-white/10 pl-4">
-              <p className="text-sm font-semibold text-white">ตรวจสอบ</p>
-              <p className="mt-2 text-sm leading-6 text-slate-300">
-                server ตรวจ payload และ rate limit ใน backend mode
-              </p>
-            </div>
+          <p className="mb-3 text-xs font-black uppercase tracking-[0.22em] text-ember-100">
+            Report intake
+          </p>
+          <h2 className="max-w-3xl text-3xl font-black tracking-tight md:text-5xl">
+            แจ้งเหตุให้ครบพอสำหรับการตัดสินใจ
+          </h2>
+          <p className="mt-5 max-w-2xl text-base leading-7 text-slate-300">
+            ฟอร์มนี้ออกแบบเหมือนจุดรับเรื่องภาคสนาม: เก็บประเภทเหตุการณ์
+            ความรุนแรง รูปถ่าย และพิกัด โดยไม่ให้ client ตั้งสถานะยืนยันเอง
+          </p>
+
+          <div className="mt-8 divide-y divide-white/10 border-y border-white/10">
+            {intakeNotes.map((item) => (
+              <div key={item.label} className="grid gap-3 py-5 sm:grid-cols-[64px_1fr]">
+                <span className="font-mono text-sm font-bold text-ember-500">
+                  {item.label}
+                </span>
+                <div>
+                  <p className="font-bold text-white">{item.title}</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-300">{item.body}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
-        <div className="rounded-lg border border-white/10 bg-white p-4 text-smoke-950 shadow-panel">
+        <div className="rounded-lg border border-white/10 bg-[#f8f5ee] p-3 text-smoke-950 shadow-[0_28px_80px_rgb(0_0_0_/_0.28)] md:p-4">
+          <div className="border-b border-smoke-200 px-2 pb-3 md:px-3">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-smoke-500">
+              Field report form
+            </p>
+            <p className="mt-2 text-sm leading-6 text-smoke-600">
+              ใส่ข้อมูลเท่าที่จำเป็น ระบบจะตรวจ payload อีกครั้งใน backend mode
+            </p>
+          </div>
           {systemMessage ? (
-            <div className="mb-4 flex items-start gap-3 rounded-lg border border-ember-100 bg-ember-50 p-3 text-sm text-ember-700">
+            <div className="mx-2 my-4 flex items-start gap-3 rounded-md border border-ember-100 bg-ember-50 p-3 text-sm text-ember-700 md:mx-3">
               <AlertTriangle aria-hidden="true" className="mt-0.5 shrink-0" size={18} />
               <span>{systemMessage}</span>
             </div>
           ) : null}
-          {children}
+          <div className="p-2 pt-4 md:p-3 md:pt-4">{children}</div>
         </div>
       </div>
     </section>

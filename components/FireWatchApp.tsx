@@ -339,10 +339,10 @@ export function FireWatchApp() {
       {statusFilters.map((filter) => (
         <button
           key={filter}
-          className={`rounded-md border px-3 py-2 text-sm font-semibold transition ${
+          className={`rounded-md border px-3 py-2 text-sm font-bold transition ${
             statusFilter === filter
-              ? "border-slate-950 bg-slate-950 text-white"
-              : "border-smoke-200 bg-white text-smoke-700 hover:border-smoke-400"
+              ? "border-slate-950 bg-slate-950 text-white shadow-sm"
+              : "border-smoke-200 bg-smoke-50 text-smoke-700 hover:border-smoke-400 hover:bg-white"
           }`}
           type="button"
           onClick={() => setStatusFilter(filter)}
@@ -354,7 +354,7 @@ export function FireWatchApp() {
   );
 
   return (
-    <main className="min-h-screen bg-smoke-50 text-smoke-950">
+    <main className="min-h-screen bg-[#f8f5ee] text-smoke-950">
       <TopNav
         runtimeModeLabel={getRuntimeModeLabel()}
         reputationScore={reputationScore}
@@ -375,7 +375,7 @@ export function FireWatchApp() {
       {systemMessage ? (
         <div
           aria-live="polite"
-          className="fixed bottom-4 left-4 right-4 z-50 mx-auto flex max-w-xl items-start gap-3 rounded-lg border border-ember-100 bg-white p-4 text-sm text-smoke-950 shadow-panel md:left-auto md:right-6"
+          className="fixed bottom-4 left-4 right-4 z-50 mx-auto flex max-w-xl items-start gap-3 rounded-lg border border-ember-200 bg-[#fffaf3] p-4 text-sm font-semibold text-smoke-950 shadow-[0_22px_60px_rgb(15_23_42_/_0.2)] md:left-auto md:right-6"
           role="status"
         >
           <AlertTriangle aria-hidden="true" className="mt-0.5 shrink-0 text-ember-600" size={18} />
@@ -409,7 +409,7 @@ export function FireWatchApp() {
       <TrustSecuritySection />
       <DemoModeSection isBackendMode={isBackendMode} />
 
-      <footer className="bg-slate-950 px-4 py-8 text-sm text-slate-400">
+      <footer className="bg-[#07111f] px-4 py-8 text-sm text-slate-400">
         <div className="mx-auto flex max-w-[1440px] flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <span>FireWatch civic-tech demo</span>
           <span>Realtime reports, nearby confirmation, and server-side abuse prevention</span>
