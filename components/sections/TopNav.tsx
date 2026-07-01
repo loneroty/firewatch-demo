@@ -14,7 +14,7 @@ const navItems = [
 
 export function TopNav({ runtimeModeLabel, reputationScore }: TopNavProps) {
   return (
-    <header className="sticky top-0 z-40 border-b border-white/10 bg-[#07111f]/95 px-4 py-3 text-white shadow-[0_1px_0_rgb(255_255_255_/_0.04)] backdrop-blur">
+    <header className="sticky top-0 z-[3000] border-b border-white/10 bg-[#07111f]/95 px-4 py-3 text-white shadow-[0_1px_0_rgb(255_255_255_/_0.04)] backdrop-blur">
       <nav className="mx-auto flex max-w-[1440px] flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center justify-between gap-4">
           <a className="group flex min-w-0 items-center gap-3" href="#top" aria-label="FireWatch home">

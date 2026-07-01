@@ -8,7 +8,7 @@ interface LiveMapSectionProps {
 
 export function LiveMapSection({ children }: LiveMapSectionProps) {
   return (
-    <section id="live-map" className="scroll-mt-28 bg-[#f8f5ee] px-4 py-16 md:py-20">
+    <section id="live-map" className="relative z-0 isolate scroll-mt-28 bg-[#f8f5ee] px-4 py-16 md:py-20">
       <div className="mx-auto max-w-[1440px]">
         <div className="mb-7 grid gap-5 lg:grid-cols-[minmax(0,0.85fr)_minmax(320px,0.35fr)] lg:items-end">
           <div>
@@ -26,7 +26,7 @@ export function LiveMapSection({ children }: LiveMapSectionProps) {
         </div>
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
-          <div className="overflow-hidden rounded-lg border border-slate-900/10 bg-[#07111f] p-3 shadow-[0_28px_80px_rgb(15_23_42_/_0.22)]">
+          <div className="relative z-0 isolate overflow-hidden rounded-lg border border-slate-900/10 bg-[#07111f] p-3 shadow-[0_28px_80px_rgb(15_23_42_/_0.22)]">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3 px-1 text-xs text-slate-300">
               <span className="inline-flex items-center gap-2 font-bold uppercase tracking-[0.18em]">
                 <MapPinned aria-hidden="true" size={15} />
@@ -34,7 +34,7 @@ export function LiveMapSection({ children }: LiveMapSectionProps) {
               </span>
               <span className="text-slate-500">OpenStreetMap / clustered reports</span>
             </div>
-            <div className="h-[480px] overflow-hidden rounded-md border border-white/10 bg-smoke-100 md:h-[600px] lg:h-[700px]">
+            <div className="relative z-0 isolate h-[480px] overflow-hidden rounded-md border border-white/10 bg-smoke-100 md:h-[600px] lg:h-[700px]">
               {children}
             </div>
           </div>

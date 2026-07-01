@@ -127,5 +127,10 @@ export function FireMap({ reports, selectedReport, onSelectReport }: FireMapProp
     });
   }, [selectedReport]);
 
-  return <div ref={containerRef} className="h-full min-h-[420px] w-full md:min-h-[560px] lg:min-h-full" />;
+  return (
+    <div
+      ref={containerRef}
+      className="relative z-0 h-full min-h-[420px] w-full md:min-h-[560px] lg:min-h-full"
+    />
+  );
 }

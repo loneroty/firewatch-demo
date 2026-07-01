@@ -65,6 +65,9 @@ textarea {
 
 .leaflet-container {
   min-height: 100%;
+  position: relative;
+  isolation: isolate;
+  z-index: 0;
   background: #e2e8f0;
 }
 
