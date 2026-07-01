@@ -10,17 +10,18 @@
 - Phase 2 security baseline has been merged into `main`.
 - Firestore Security Rules exist in `firestore.rules` and are covered by emulator-backed tests in `firestore.rules.test.ts`.
 - Firebase emulator config exists in `firebase.json`; Firestore runs on `127.0.0.1:8080`, Functions on `127.0.0.1:5001`, Storage on `127.0.0.1:9199`, and Auth on `127.0.0.1:9099`.
-- Phase 5 shared realtime confirmation work is on branch `feature/phase-5-shared-realtime-confirmation`.
+- Phase 6 polished web UI work is on branch `feature/phase-6-polished-web-ui`.
 - Cloud Functions source now lives under `functions/`.
 - `createReport` is the intended production path for new report creation. It uses `auth.uid` as the source of truth, requires App Check on the callable function, assigns `createdAt` server-side, rejects server-controlled fields, validates `gs://` report image paths against `reportImages/{auth.uid}/...`, and enforces the hourly report rate limit with a Firestore transaction.
 - Server-side hourly buckets are stored at `rateLimits/{uid}/hours/{yyyyMMddHH}`.
 - Storage Rules exist in `storage.rules`. Users can create report images only under `reportImages/{auth.uid}/{imageId}` with `image/*` content type and a 500KB limit; unauthenticated uploads, other-user paths, updates, and deletes are blocked.
 - Firebase backend client flow uploads compressed report images to Storage first, sends only the resulting `gs://` path to callable `createReport`, and loads shared reports through Firestore realtime subscription.
 - Callable `confirmReport` confirms a target report by requiring `targetReportId` plus a user-owned `confirmingReportId` within 500m/60 minutes. It rejects self-confirmation, duplicate confirmation, hidden/rejected targets, and confirming reports not owned by `auth.uid`, then updates `confirmedByReportIds` and `verificationStatus` in a Firestore transaction.
+- The main app UI is now organized as a polished multi-section civic-tech web app: hero, situation summary, live map, report form, latest reports, how-it-works, trust/security, and demo mode notes. This is a presentation/layout change; backend data flow remains unchanged.
 
 ## Current Scope
 
-- Phase 5 current slice: shared Firebase backend demo with realtime reports and confirmation-by-nearby-report. No admin dashboard, deployment, large architecture change, or unrelated feature work is in scope.
+- Phase 6 current slice: polished web UI for competition/judging presentation. No backend changes, deployment, admin dashboard, large architecture change, or unrelated feature work is in scope.
 - Full Line Login, Push Notification, Admin Dashboard UI, Remote Config, Sentry, and Firebase Performance Monitoring are still pending.
 
 ## Data Ownership Notes
@@ -39,4 +40,4 @@
 - Firebase backend mode requires public Firebase env values, Anonymous Auth enabled, App Check configured for the demo domain, Firestore/Storage Rules deployed after tests, and callable `createReport`/`confirmReport` deployed in `asia-southeast1`.
 - Generated files and logs observed locally are ignored by Git: `.next/`, `public/sw.js`, `public/workbox-*.js`, `functions/lib/`, `firestore-debug.log`, `.next-dev*.log`, and `tsconfig.tsbuildinfo`.
 - Manual smoke test coverage for demo day lives in `docs/TESTING.md`.
-- Phase 4 presentation package lives in `docs/DEMO_SCRIPT.md`, `docs/JUDGING_NOTES.md`, and `docs/DEMO_CHECKLIST.md`.
+- Presentation package lives in `docs/DEMO_SCRIPT.md`, `docs/JUDGING_NOTES.md`, and `docs/DEMO_CHECKLIST.md`.

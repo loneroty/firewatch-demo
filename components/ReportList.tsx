@@ -49,26 +49,31 @@ export function ReportList({
   }
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto p-3">
-      <div className="space-y-3">
+    <div className="min-h-0 p-3 sm:p-4">
+      <div className="grid gap-4">
         {reports.map((report) => (
           <article
             key={report.id}
-            className={`rounded-lg border p-3 transition ${
+            className={`rounded-lg border p-4 transition ${
               selectedReportId === report.id
-                ? "border-smoke-950 bg-smoke-50"
-                : "border-smoke-200 bg-white"
+                ? "border-ember-600 bg-ember-50"
+                : "border-smoke-200 bg-white hover:border-smoke-300"
             }`}
           >
             <button
-              className="grid w-full grid-cols-[72px_1fr] gap-3 text-left"
+              className="grid w-full grid-cols-[76px_1fr] gap-3 text-left sm:grid-cols-[88px_1fr]"
               type="button"
               onClick={() => onSelectReport(report.id)}
             >
               <img
-                className="h-18 w-18 aspect-square rounded-md object-cover"
+                className="h-[76px] w-[76px] aspect-square rounded-md object-cover sm:h-[88px] sm:w-[88px]"
                 src={report.photoURL}
                 alt={`รูปประกอบรายงาน ${getCategoryLabel(report.category)}`}
+                onError={(event) => {
+                  if (!event.currentTarget.src.endsWith("/report-placeholder.svg")) {
+                    event.currentTarget.src = "/report-placeholder.svg";
+                  }
+                }}
               />
               <span className="min-w-0">
                 <span className="mb-2 flex flex-wrap items-center gap-2">
@@ -80,7 +85,7 @@ export function ReportList({
                     {report.verificationStatus}
                   </span>
                   {report.isThrottled ? (
-                    <span className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700">
+                    <span className="rounded-md bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700">
                       จำกัดความน่าเชื่อถือ
                     </span>
                   ) : null}
@@ -100,13 +105,13 @@ export function ReportList({
             {report.notes ? (
               <p className="mt-3 line-clamp-2 text-sm text-smoke-700">{report.notes}</p>
             ) : null}
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-smoke-100 pt-3">
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-smoke-100 pt-3">
               <span className="text-xs text-smoke-600">
                 ยืนยันโดย {report.confirmedByReportIds.length} รายงาน
               </span>
               <div className="flex flex-wrap items-center gap-2">
                 <button
-                  className="inline-flex items-center gap-1 rounded-md border border-canopy-200 px-2.5 py-1.5 text-xs font-semibold text-canopy-700 hover:border-canopy-400"
+                  className="inline-flex items-center gap-1 rounded-md bg-canopy-700 px-3 py-2 text-xs font-bold text-white transition hover:bg-canopy-500"
                   type="button"
                   onClick={() => {
                     void onConfirmReport(report.id);
@@ -116,7 +121,7 @@ export function ReportList({
                   ยืนยันจุดนี้
                 </button>
                 <button
-                  className="inline-flex items-center gap-1 rounded-md border border-smoke-200 px-2.5 py-1.5 text-xs font-semibold text-smoke-700 hover:border-smoke-400"
+                  className="inline-flex items-center gap-1 rounded-md border border-smoke-200 px-3 py-2 text-xs font-semibold text-smoke-700 transition hover:border-smoke-400 hover:bg-smoke-50"
                   type="button"
                   onClick={() => onFlagReport(report.id)}
                 >

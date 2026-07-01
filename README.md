@@ -4,13 +4,13 @@ FireWatch เป็น MVP สำหรับแพลตฟอร์ม crowdso
 
 ## สถานะเฟส
 
-เฟสปัจจุบัน: Phase 5 shared realtime confirmation
+เฟสปัจจุบัน: Phase 6 polished web UI
 
 - รัน local ได้โดยไม่ต้องมี Firebase project ผ่าน Local demo mode
 - รองรับ Firebase public env เมื่อต้องการ demo backend ที่แชร์ข้อมูลข้ามเครื่องจริง
 - มี Firestore Security Rules baseline, Storage Rules, Cloud Function สำหรับสร้าง report จริง และ Cloud Function สำหรับยืนยัน report
 - Firebase backend mode โหลด reports จาก Firestore realtime subscription และยืนยันจุดผ่าน callable `confirmReport`
-- งาน Phase 5 รอบนี้เพิ่ม shared backend/realtime confirmation เฉพาะ scope demo ไม่เพิ่ม feature ใหญ่หรือ admin workflow
+- งาน Phase 6 รอบนี้ปรับหน้าเว็บเป็น polished multi-section civic-tech product โดยไม่เปลี่ยน backend architecture
 - ยังไม่รวม Line Login, Push Notification จริง, Admin Dashboard เต็มรูป หรือ Lighthouse gate
 
 ## เริ่มใช้งาน

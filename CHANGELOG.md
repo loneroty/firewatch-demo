@@ -28,6 +28,7 @@ The format is based on Keep a Changelog.
 - Callable `confirmReport` for confirmation-by-nearby-report using `targetReportId` and `confirmingReportId` within 500m/60 minutes.
 - UI action for "ยืนยันจุดนี้" with Thai success/error messages and local demo fallback behavior.
 - Emulator-backed tests for `confirmReport` and Security Rules coverage blocking direct client edits to `confirmedByReportIds`.
+- Phase 6 polished multi-section web UI with navbar, hero, situation summary, live map, report form, latest reports, workflow explanation, security notes, and demo mode notes.
 
 ### Changed
 
@@ -35,3 +36,4 @@ The format is based on Keep a Changelog.
 - Improved Firebase backend report error messages in Thai for App Check, config, anonymous auth, Storage upload, callable Function rejection, rate limit, and invalid payload cases.
 - Updated README with Competition Demo Quick Start for local judging setup.
 - Updated README, project state, testing guide, demo checklist, and demo script for Firebase shared backend mode.
+- Improved ReportForm, ReportList, and map container presentation while keeping local demo and Firebase backend flows unchanged.

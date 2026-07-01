@@ -101,16 +101,16 @@ export function ReportForm({ onSubmit }: ReportFormProps) {
   }
 
   return (
-    <form className="space-y-4" onSubmit={handleSubmit}>
+    <form className="space-y-5" onSubmit={handleSubmit}>
       <div>
-        <label className="mb-2 block text-sm font-medium text-smoke-800">
+        <label className="mb-2 block text-sm font-semibold text-smoke-800">
           ประเภทเหตุการณ์
         </label>
         <div className="grid grid-cols-2 gap-2">
           {categoryOptions.map((option) => (
             <button
               key={option.value}
-              className={`rounded-md border px-3 py-2 text-left text-sm font-medium transition ${
+              className={`min-h-12 rounded-lg border px-3 py-2 text-left text-sm font-semibold transition ${
                 category === option.value
                   ? "border-ember-600 bg-ember-50 text-ember-700"
                   : "border-smoke-200 bg-white text-smoke-700 hover:border-smoke-400"
@@ -125,14 +125,14 @@ export function ReportForm({ onSubmit }: ReportFormProps) {
       </div>
 
       <div>
-        <label className="mb-2 block text-sm font-medium text-smoke-800">
+        <label className="mb-2 block text-sm font-semibold text-smoke-800">
           ความรุนแรง
         </label>
         <div className="grid grid-cols-3 gap-2">
           {severityOptions.map((option) => (
             <button
               key={option.value}
-              className={`rounded-md border px-3 py-2 text-center text-sm font-semibold transition ${
+              className={`min-h-12 rounded-lg border px-3 py-2 text-center text-sm font-semibold transition ${
                 severity === option.value
                   ? "border-smoke-950 bg-smoke-950 text-white"
                   : "border-smoke-200 bg-white text-smoke-700 hover:border-smoke-400"
@@ -146,18 +146,18 @@ export function ReportForm({ onSubmit }: ReportFormProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-[1fr_auto] gap-2">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
         <label className="block">
-          <span className="mb-2 block text-sm font-medium text-smoke-800">พื้นที่</span>
+          <span className="mb-2 block text-sm font-semibold text-smoke-800">พื้นที่</span>
           <input
-            className="h-11 w-full rounded-md border border-smoke-200 px-3 text-sm outline-none focus:border-smoke-950"
+            className="h-12 w-full rounded-lg border border-smoke-200 bg-white px-3 text-sm outline-none focus:border-smoke-950"
             value={addressLabel}
             onChange={(event) => setAddressLabel(event.target.value)}
             placeholder="เช่น ต.สุเทพ"
           />
         </label>
         <button
-          className="mt-7 inline-flex h-11 items-center gap-2 rounded-md border border-smoke-200 bg-white px-3 text-sm font-semibold text-smoke-700 hover:border-smoke-400 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-smoke-200 bg-white px-4 text-sm font-semibold text-smoke-700 transition hover:border-smoke-400 disabled:cursor-not-allowed disabled:opacity-60 sm:mt-7"
           type="button"
           onClick={requestLocation}
           disabled={isLocating}
@@ -167,20 +167,20 @@ export function ReportForm({ onSubmit }: ReportFormProps) {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <label className="block">
-          <span className="mb-2 block text-sm font-medium text-smoke-800">Lat</span>
+          <span className="mb-2 block text-sm font-semibold text-smoke-800">Lat</span>
           <input
-            className="h-11 w-full rounded-md border border-smoke-200 px-3 text-sm outline-none focus:border-smoke-950"
+            className="h-12 w-full rounded-lg border border-smoke-200 bg-white px-3 text-sm outline-none focus:border-smoke-950"
             inputMode="decimal"
             value={lat}
             onChange={(event) => setLat(event.target.value)}
           />
         </label>
         <label className="block">
-          <span className="mb-2 block text-sm font-medium text-smoke-800">Lng</span>
+          <span className="mb-2 block text-sm font-semibold text-smoke-800">Lng</span>
           <input
-            className="h-11 w-full rounded-md border border-smoke-200 px-3 text-sm outline-none focus:border-smoke-950"
+            className="h-12 w-full rounded-lg border border-smoke-200 bg-white px-3 text-sm outline-none focus:border-smoke-950"
             inputMode="decimal"
             value={lng}
             onChange={(event) => setLng(event.target.value)}
@@ -189,8 +189,8 @@ export function ReportForm({ onSubmit }: ReportFormProps) {
       </div>
 
       <label className="block">
-        <span className="mb-2 block text-sm font-medium text-smoke-800">รูปถ่าย</span>
-        <span className="flex min-h-11 items-center gap-2 rounded-md border border-dashed border-smoke-300 bg-smoke-50 px-3 py-2 text-sm text-smoke-700">
+        <span className="mb-2 block text-sm font-semibold text-smoke-800">รูปถ่าย</span>
+        <span className="flex min-h-12 items-center gap-2 rounded-lg border border-dashed border-smoke-300 bg-smoke-50 px-3 py-2 text-sm text-smoke-700 transition hover:border-smoke-400">
           <Camera aria-hidden="true" size={18} />
           <span className="truncate">{photoFile ? photoFile.name : "เลือกหรือถ่ายรูป"}</span>
         </span>
@@ -204,9 +204,9 @@ export function ReportForm({ onSubmit }: ReportFormProps) {
       </label>
 
       <label className="block">
-        <span className="mb-2 block text-sm font-medium text-smoke-800">บันทึกสั้น ๆ</span>
+        <span className="mb-2 block text-sm font-semibold text-smoke-800">บันทึกสั้น ๆ</span>
         <textarea
-          className="min-h-20 w-full resize-y rounded-md border border-smoke-200 px-3 py-2 text-sm outline-none focus:border-smoke-950"
+          className="min-h-24 w-full resize-y rounded-lg border border-smoke-200 bg-white px-3 py-3 text-sm outline-none focus:border-smoke-950"
           value={notes}
           onChange={(event) => setNotes(event.target.value)}
           maxLength={180}
@@ -215,11 +215,11 @@ export function ReportForm({ onSubmit }: ReportFormProps) {
       </label>
 
       {formError ? (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{formError}</p>
+        <p className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700">{formError}</p>
       ) : null}
 
       <button
-        className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-ember-600 px-4 text-sm font-bold text-white transition hover:bg-ember-700 disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-ember-600 px-4 text-sm font-bold text-white transition hover:bg-ember-700 disabled:cursor-not-allowed disabled:opacity-60"
         type="submit"
         disabled={isSubmitting}
       >

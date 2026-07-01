@@ -1,11 +1,19 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { AlertTriangle, Flame, Gauge, RadioTower } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ReportForm } from "@/components/ReportForm";
 import { ReportList } from "@/components/ReportList";
-import { SummaryMetric } from "@/components/SummaryMetric";
+import { DemoModeSection } from "@/components/sections/DemoModeSection";
+import { HeroSection } from "@/components/sections/HeroSection";
+import { HowItWorksSection } from "@/components/sections/HowItWorksSection";
+import { LatestReportsSection } from "@/components/sections/LatestReportsSection";
+import { LiveMapSection } from "@/components/sections/LiveMapSection";
+import { ReportFormSection } from "@/components/sections/ReportFormSection";
+import { SituationSummary } from "@/components/sections/SituationSummary";
+import { TopNav } from "@/components/sections/TopNav";
+import { TrustSecuritySection } from "@/components/sections/TrustSecuritySection";
 import {
   confirmReportInBackend,
   createReportInBackend,
@@ -91,6 +99,7 @@ export function FireWatchApp() {
   const [localUserId, setLocalUserId] = useState("local-demo-user");
   const [reputationScore, setReputationScore] = useState(35);
   const [systemMessage, setSystemMessage] = useState<string | null>(null);
+  const [currentTimeMs, setCurrentTimeMs] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -144,6 +153,19 @@ export function FireWatchApp() {
     }
   }, [isBackendMode, reports]);
 
+  useEffect(() => {
+    function updateCurrentTime(): void {
+      setCurrentTimeMs(Date.now());
+    }
+
+    updateCurrentTime();
+    const intervalId = window.setInterval(updateCurrentTime, 60_000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
   const visibleReports = useMemo(() => {
     const notHidden = reports.filter((report) => report.moderationStatus !== "ถูกซ่อน");
     if (statusFilter === "ทั้งหมด") {
@@ -165,6 +187,11 @@ export function FireWatchApp() {
     (report) => report.verificationStatus === "รอการยืนยัน"
   ).length;
   const hiddenCount = reports.filter((report) => report.moderationStatus === "ถูกซ่อน").length;
+  const recentReportsCount = reports.filter((report) => {
+    const createdAt = new Date(report.createdAt).getTime();
+    const ageMs = currentTimeMs - createdAt;
+    return currentTimeMs > 0 && Number.isFinite(createdAt) && ageMs >= 0 && ageMs <= VERIFICATION_WINDOW_MS;
+  }).length;
 
   const handleCreateReport = useCallback(
     async (draft: ReportDraft) => {
@@ -307,96 +334,87 @@ export function FireWatchApp() {
     setSystemMessage("บันทึกการรายงานความไม่เหมาะสมแล้ว");
   }, []);
 
+  const filterControls = (
+    <div className="flex flex-wrap gap-2">
+      {statusFilters.map((filter) => (
+        <button
+          key={filter}
+          className={`rounded-md border px-3 py-2 text-sm font-semibold transition ${
+            statusFilter === filter
+              ? "border-slate-950 bg-slate-950 text-white"
+              : "border-smoke-200 bg-white text-smoke-700 hover:border-smoke-400"
+          }`}
+          type="button"
+          onClick={() => setStatusFilter(filter)}
+        >
+          {filter}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
     <main className="min-h-screen bg-smoke-50 text-smoke-950">
-      <div className="grid min-h-screen grid-rows-[auto_1fr]">
-        <header className="border-b border-smoke-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur">
-          <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="grid h-10 w-10 place-items-center rounded-lg bg-smoke-950 text-white">
-                <Flame aria-hidden="true" size={22} />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold leading-tight">FireWatch</h1>
-                <p className="text-sm text-smoke-600">
-                  รายงานจุดเผาและติดตามความเสี่ยงแบบเรียลไทม์
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-              <span className="rounded-full border border-smoke-200 bg-white px-3 py-1 text-smoke-600">
-                {getRuntimeModeLabel()}
-              </span>
-              <span className="inline-flex items-center gap-2 rounded-full bg-canopy-50 px-3 py-1 font-medium text-canopy-700">
-                <Gauge aria-hidden="true" size={16} />
-                Reputation {reputationScore}
-              </span>
-            </div>
-          </div>
-        </header>
+      <TopNav
+        runtimeModeLabel={getRuntimeModeLabel()}
+        reputationScore={reputationScore}
+      />
+      <HeroSection
+        totalReports={reports.length}
+        confirmedCount={confirmedCount}
+        pendingCount={pendingCount}
+        isBackendMode={isBackendMode}
+      />
+      <SituationSummary
+        totalReports={reports.length}
+        pendingCount={pendingCount}
+        confirmedCount={confirmedCount}
+        recentReportsCount={recentReportsCount}
+      />
 
-        <div className="mx-auto grid w-full max-w-[1440px] grid-cols-1 gap-4 p-4 lg:grid-cols-[420px_minmax(0,1fr)]">
-          <aside className="flex min-h-0 flex-col gap-4 lg:max-h-[calc(100vh-96px)]">
-            {systemMessage ? (
-              <div className="flex items-start gap-3 rounded-lg border border-ember-100 bg-ember-50 p-3 text-sm text-ember-700">
-                <AlertTriangle aria-hidden="true" className="mt-0.5 shrink-0" size={18} />
-                <span>{systemMessage}</span>
-              </div>
-            ) : null}
-
-            <section className="rounded-lg border border-smoke-200 bg-white p-4 shadow-panel">
-              <div className="mb-4 grid grid-cols-3 gap-2">
-                <SummaryMetric label="ทั้งหมด" value={reports.length} icon={RadioTower} />
-                <SummaryMetric label="ยืนยันแล้ว" value={confirmedCount} icon={Flame} />
-                <SummaryMetric label="รอ" value={pendingCount} icon={AlertTriangle} />
-              </div>
-              <ReportForm onSubmit={handleCreateReport} />
-            </section>
-
-            <section className="flex min-h-0 flex-1 flex-col rounded-lg border border-smoke-200 bg-white shadow-panel">
-              <div className="border-b border-smoke-200 p-4">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <h2 className="text-base font-semibold">รายงานล่าสุด</h2>
-                  {hiddenCount > 0 ? (
-                    <span className="text-xs text-smoke-600">ซ่อน {hiddenCount}</span>
-                  ) : null}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {statusFilters.map((filter) => (
-                    <button
-                      key={filter}
-                      className={`rounded-md border px-3 py-1.5 text-sm font-medium transition ${
-                        statusFilter === filter
-                          ? "border-smoke-950 bg-smoke-950 text-white"
-                          : "border-smoke-200 bg-white text-smoke-700 hover:border-smoke-400"
-                      }`}
-                      type="button"
-                      onClick={() => setStatusFilter(filter)}
-                    >
-                      {filter}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <ReportList
-                reports={visibleReports}
-                selectedReportId={selectedReportId}
-                onSelectReport={setSelectedReportId}
-                onFlagReport={handleFlagReport}
-                onConfirmReport={handleConfirmReport}
-              />
-            </section>
-          </aside>
-
-          <section className="min-h-[520px] overflow-hidden rounded-lg border border-smoke-200 bg-white shadow-panel lg:min-h-0">
-            <FireMap
-              reports={visibleReports}
-              selectedReport={selectedReport}
-              onSelectReport={setSelectedReportId}
-            />
-          </section>
+      {systemMessage ? (
+        <div
+          aria-live="polite"
+          className="fixed bottom-4 left-4 right-4 z-50 mx-auto flex max-w-xl items-start gap-3 rounded-lg border border-ember-100 bg-white p-4 text-sm text-smoke-950 shadow-panel md:left-auto md:right-6"
+          role="status"
+        >
+          <AlertTriangle aria-hidden="true" className="mt-0.5 shrink-0 text-ember-600" size={18} />
+          <span>{systemMessage}</span>
         </div>
-      </div>
+      ) : null}
+
+      <LiveMapSection>
+        <FireMap
+          reports={visibleReports}
+          selectedReport={selectedReport}
+          onSelectReport={setSelectedReportId}
+        />
+      </LiveMapSection>
+
+      <ReportFormSection systemMessage={systemMessage}>
+        <ReportForm onSubmit={handleCreateReport} />
+      </ReportFormSection>
+
+      <LatestReportsSection hiddenCount={hiddenCount} filters={filterControls}>
+        <ReportList
+          reports={visibleReports}
+          selectedReportId={selectedReportId}
+          onSelectReport={setSelectedReportId}
+          onFlagReport={handleFlagReport}
+          onConfirmReport={handleConfirmReport}
+        />
+      </LatestReportsSection>
+
+      <HowItWorksSection />
+      <TrustSecuritySection />
+      <DemoModeSection isBackendMode={isBackendMode} />
+
+      <footer className="bg-slate-950 px-4 py-8 text-sm text-slate-400">
+        <div className="mx-auto flex max-w-[1440px] flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <span>FireWatch civic-tech demo</span>
+          <span>Realtime reports, nearby confirmation, and server-side abuse prevention</span>
+        </div>
+      </footer>
     </main>
   );
 }
