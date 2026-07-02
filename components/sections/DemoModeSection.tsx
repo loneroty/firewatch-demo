@@ -1,3 +1,5 @@
+import { Reveal } from "@/components/ui/Reveal";
+
 interface DemoModeSectionProps {
   isBackendMode: boolean;
 }
@@ -23,7 +25,7 @@ export function DemoModeSection({ isBackendMode }: DemoModeSectionProps) {
   return (
     <section className="bg-[#f8f5ee] px-4 py-12">
       <div className="mx-auto max-w-[1440px]">
-        <div className="grid gap-5 rounded-lg border border-smoke-200 bg-white p-5 shadow-sm lg:grid-cols-[minmax(260px,360px)_1fr] lg:items-center">
+        <Reveal className="grid gap-5 rounded-lg border border-smoke-200 bg-white p-5 shadow-sm lg:grid-cols-[minmax(260px,360px)_1fr] lg:items-center">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.22em] text-smoke-500">
               Demo mode note
@@ -40,7 +42,7 @@ export function DemoModeSection({ isBackendMode }: DemoModeSectionProps) {
               return (
                 <article
                   key={mode.name}
-                  className={`border-l-4 p-4 ${
+                  className={`hover-lift border-l-4 p-4 ${
                     isActive
                       ? "border-ember-600 bg-ember-50"
                       : "border-smoke-200 bg-smoke-50"
@@ -51,7 +53,7 @@ export function DemoModeSection({ isBackendMode }: DemoModeSectionProps) {
                     <span
                       className={`rounded-full px-2.5 py-1 text-xs font-black ${
                         isActive
-                          ? "bg-ember-600 text-white"
+                          ? "motion-pulse-soft bg-ember-600 text-white"
                           : "bg-white text-smoke-600"
                       }`}
                     >
@@ -63,7 +65,7 @@ export function DemoModeSection({ isBackendMode }: DemoModeSectionProps) {
               );
             })}
           </div>
-        </div>
+        </Reveal>
       </div>
     </section>
   );

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { AlertTriangle } from "lucide-react";
+import { Reveal } from "@/components/ui/Reveal";
 
 interface ReportFormSectionProps {
   systemMessage: string | null;
@@ -28,7 +29,7 @@ export function ReportFormSection({ systemMessage, children }: ReportFormSection
   return (
     <section id="report" className="scroll-mt-28 bg-[#07111f] px-4 py-16 text-white md:py-20">
       <div className="mx-auto grid max-w-[1440px] gap-8 lg:grid-cols-[minmax(0,0.82fr)_minmax(380px,540px)] lg:items-start">
-        <div>
+        <Reveal>
           <p className="mb-3 text-xs font-black uppercase tracking-[0.22em] text-ember-100">
             Report intake
           </p>
@@ -42,7 +43,7 @@ export function ReportFormSection({ systemMessage, children }: ReportFormSection
 
           <div className="mt-8 divide-y divide-white/10 border-y border-white/10">
             {intakeNotes.map((item) => (
-              <div key={item.label} className="grid gap-3 py-5 sm:grid-cols-[64px_1fr]">
+              <div key={item.label} className="grid gap-3 py-5 transition-colors duration-200 hover:bg-white/[0.03] sm:grid-cols-[64px_1fr]">
                 <span className="font-mono text-sm font-bold text-ember-500">
                   {item.label}
                 </span>
@@ -53,9 +54,9 @@ export function ReportFormSection({ systemMessage, children }: ReportFormSection
               </div>
             ))}
           </div>
-        </div>
+        </Reveal>
 
-        <div className="rounded-lg border border-white/10 bg-[#f8f5ee] p-3 text-smoke-950 shadow-[0_28px_80px_rgb(0_0_0_/_0.28)] md:p-4">
+        <Reveal delayMs={120} className="rounded-lg border border-white/10 bg-[#f8f5ee] p-3 text-smoke-950 shadow-[0_28px_80px_rgb(0_0_0_/_0.28)] md:p-4">
           <div className="border-b border-smoke-200 px-2 pb-3 md:px-3">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-smoke-500">
               Field report form
@@ -65,13 +66,13 @@ export function ReportFormSection({ systemMessage, children }: ReportFormSection
             </p>
           </div>
           {systemMessage ? (
-            <div className="mx-2 my-4 flex items-start gap-3 rounded-md border border-ember-100 bg-ember-50 p-3 text-sm text-ember-700 md:mx-3">
+            <div className="motion-fade-up mx-2 my-4 flex items-start gap-3 rounded-md border border-ember-100 bg-ember-50 p-3 text-sm text-ember-700 md:mx-3">
               <AlertTriangle aria-hidden="true" className="mt-0.5 shrink-0" size={18} />
               <span>{systemMessage}</span>
             </div>
           ) : null}
           <div className="p-2 pt-4 md:p-3 md:pt-4">{children}</div>
-        </div>
+        </Reveal>
       </div>
     </section>
   );

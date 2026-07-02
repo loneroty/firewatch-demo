@@ -1,3 +1,5 @@
+import { Reveal } from "@/components/ui/Reveal";
+
 const securityLayers = [
   {
     layer: "Client app",
@@ -33,7 +35,7 @@ export function TrustSecuritySection() {
     <section id="security" className="scroll-mt-28 bg-[#07111f] px-4 py-16 text-white md:py-20">
       <div className="mx-auto max-w-[1440px]">
         <div className="grid gap-8 lg:grid-cols-[minmax(300px,460px)_1fr]">
-          <div>
+          <Reveal>
             <p className="mb-3 text-xs font-black uppercase tracking-[0.22em] text-ember-100">
               Trust architecture
             </p>
@@ -44,14 +46,15 @@ export function TrustSecuritySection() {
               สำหรับกรรมการสายเทคนิค: production path ไม่ให้ browser ตัดสินความน่าเชื่อถือเอง
               แต่ส่งผ่าน Firebase Rules และ Cloud Functions ที่ตรวจ payload ด้วย transaction
             </p>
-          </div>
+          </Reveal>
 
           <div className="grid gap-4">
-            <div className="overflow-hidden rounded-lg border border-white/10 bg-white/[0.04]">
+            <Reveal delayMs={120} className="overflow-hidden rounded-lg border border-white/10 bg-white/[0.04]">
               {securityLayers.map((item, index) => (
                 <div
                   key={item.layer}
-                  className="grid gap-3 border-b border-white/10 p-4 last:border-b-0 md:grid-cols-[92px_180px_1fr] md:items-start"
+                  className="grid gap-3 border-b border-white/10 p-4 transition-colors duration-200 last:border-b-0 hover:bg-white/[0.04] md:grid-cols-[92px_180px_1fr] md:items-start"
+                  style={{ transitionDelay: `${index * 35}ms` }}
                 >
                   <span className="font-mono text-xs font-black text-ember-500">
                     Layer {index + 1}
@@ -60,21 +63,21 @@ export function TrustSecuritySection() {
                   <span className="text-sm leading-6 text-slate-300">{item.detail}</span>
                 </div>
               ))}
-            </div>
+            </Reveal>
 
-            <div className="rounded-lg border border-ember-500/20 bg-ember-500/10 p-5">
+            <Reveal delayMs={190} className="rounded-lg border border-ember-500/20 bg-ember-500/10 p-5">
               <p className="text-sm font-black uppercase tracking-[0.18em] text-ember-100">
                 Demo guardrails
               </p>
               <ul className="mt-4 grid gap-3 text-sm leading-6 text-slate-200 md:grid-cols-2">
                 {guardrails.map((item) => (
-                  <li key={item} className="flex gap-3">
-                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-ember-500" />
+                  <li key={item} className="flex gap-3 transition-transform duration-200 hover:translate-x-1">
+                    <span className="motion-pulse-soft mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-ember-500" />
                     <span>{item}</span>
                   </li>
                 ))}
               </ul>
-            </div>
+            </Reveal>
           </div>
         </div>
       </div>

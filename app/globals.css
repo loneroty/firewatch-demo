@@ -41,6 +41,112 @@ textarea {
   background: rgb(249 115 22 / 0.22);
 }
 
+@keyframes firewatch-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes firewatch-soft-pulse {
+  0%,
+  100% {
+    opacity: 0.72;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes firewatch-scan {
+  from {
+    transform: translateX(-42%);
+  }
+
+  to {
+    transform: translateX(142%);
+  }
+}
+
+.motion-fade-up {
+  animation: firewatch-fade-up 680ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.motion-delay-1 {
+  animation-delay: 90ms;
+}
+
+.motion-delay-2 {
+  animation-delay: 180ms;
+}
+
+.motion-delay-3 {
+  animation-delay: 270ms;
+}
+
+.motion-reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity 620ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 620ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+.motion-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.motion-pulse-soft {
+  animation: firewatch-soft-pulse 2.8s ease-in-out infinite;
+}
+
+.motion-scan-line::after {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(249 115 22 / 0.26),
+    transparent
+  );
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  transform: translateX(-42%);
+}
+
+.motion-scan-line.is-visible::after,
+.motion-scan-line.motion-fade-up::after {
+  animation: firewatch-scan 5.8s ease-in-out infinite;
+}
+
+.hover-lift {
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+.hover-lift:focus-visible {
+  outline: 2px solid rgb(249 115 22 / 0.75);
+  outline-offset: 3px;
+}
+
 .field-grid {
   background-image:
     radial-gradient(circle at 15% 8%, rgb(249 115 22 / 0.16), transparent 30%),
@@ -107,4 +213,25 @@ textarea {
 
 .leaflet-popup-content {
   margin: 12px 14px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  .motion-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .hover-lift:hover {
+    transform: none;
+  }
 }

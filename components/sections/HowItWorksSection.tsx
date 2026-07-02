@@ -1,3 +1,5 @@
+import { Reveal } from "@/components/ui/Reveal";
+
 const steps = [
   {
     label: "รับรายงาน",
@@ -24,7 +26,7 @@ export function HowItWorksSection() {
     <section className="bg-white px-4 py-16 md:py-20">
       <div className="mx-auto max-w-[1440px]">
         <div className="grid gap-8 lg:grid-cols-[minmax(280px,420px)_1fr]">
-          <div>
+          <Reveal>
             <p className="mb-3 text-xs font-black uppercase tracking-[0.22em] text-ember-700">
               Verification model
             </p>
@@ -35,15 +37,16 @@ export function HowItWorksSection() {
               FireWatch ตั้งใจให้การยืนยันผูกกับเหตุการณ์จริงในพื้นที่
               จึงใช้รายงานใกล้เคียงเป็นหลักฐานประกอบแทนการกดโหวตทั่วไป
             </p>
-          </div>
+          </Reveal>
 
-          <div className="relative">
+          <Reveal delayMs={120} className="relative">
             <div className="absolute bottom-0 left-[23px] top-0 hidden w-px bg-smoke-200 md:block" />
             <div className="grid gap-5">
               {steps.map((step, index) => (
                 <article
                   key={step.label}
-                  className="relative grid gap-4 rounded-lg border border-smoke-200 bg-[#f8f5ee] p-5 md:grid-cols-[48px_1fr]"
+                  className="hover-lift relative grid gap-4 rounded-lg border border-smoke-200 bg-[#f8f5ee] p-5 md:grid-cols-[48px_1fr]"
+                  style={{ transitionDelay: `${index * 55}ms` }}
                 >
                   <div className="relative z-10 grid h-12 w-12 place-items-center rounded-md border border-smoke-200 bg-white font-mono text-sm font-black text-ember-700">
                     0{index + 1}
@@ -62,7 +65,7 @@ export function HowItWorksSection() {
                 </article>
               ))}
             </div>
-          </div>
+          </Reveal>
         </div>
       </div>
     </section>

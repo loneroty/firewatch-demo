@@ -22,10 +22,10 @@ export function StatusLegend() {
       {legendItems.map((item) => (
         <div
           key={item.label}
-          className="grid grid-cols-[18px_1fr] gap-3 py-3"
+          className="grid grid-cols-[18px_1fr] gap-3 py-3 transition-transform duration-200 hover:translate-x-1"
         >
           <span
-            className={`mt-1.5 h-3 w-3 shrink-0 rounded-full shadow-sm ${item.markerClassName}`}
+            className={`motion-pulse-soft mt-1.5 h-3 w-3 shrink-0 rounded-full shadow-sm ${item.markerClassName}`}
           />
           <span>
             <span className="block text-sm font-semibold text-smoke-950">{item.label}</span>

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { ListFilter } from "lucide-react";
+import { Reveal } from "@/components/ui/Reveal";
 
 interface LatestReportsSectionProps {
   hiddenCount: number;
@@ -16,7 +17,7 @@ export function LatestReportsSection({
     <section id="latest-reports" className="scroll-mt-28 bg-[#f8f5ee] px-4 py-16 md:py-20">
       <div className="mx-auto max-w-[1440px]">
         <div className="grid gap-6 lg:grid-cols-[minmax(300px,420px)_minmax(0,1fr)]">
-          <div className="lg:sticky lg:top-28 lg:self-start">
+          <Reveal className="lg:sticky lg:top-28 lg:self-start">
             <p className="mb-3 text-xs font-black uppercase tracking-[0.22em] text-ember-700">
               Incident log
             </p>
@@ -32,9 +33,9 @@ export function LatestReportsSection({
                 ซ่อนจากรายการ {hiddenCount} รายงาน
               </p>
             ) : null}
-          </div>
+          </Reveal>
 
-          <div className="overflow-hidden rounded-lg border border-smoke-200 bg-white shadow-[0_24px_70px_rgb(15_23_42_/_0.12)]">
+          <Reveal delayMs={120} className="overflow-hidden rounded-lg border border-smoke-200 bg-white shadow-[0_24px_70px_rgb(15_23_42_/_0.12)]">
             <div className="border-b border-smoke-200 bg-white p-4">
               <div className="mb-3 flex items-center gap-2 text-sm font-black text-smoke-950">
                 <ListFilter aria-hidden="true" size={18} />
@@ -43,7 +44,7 @@ export function LatestReportsSection({
               {filters}
             </div>
             <div className="max-h-[760px] overflow-y-auto">{children}</div>
-          </div>
+          </Reveal>
         </div>
       </div>
     </section>

@@ -70,15 +70,18 @@ export function ReportList({
   return (
     <div className="min-h-0 bg-white">
       <div className="divide-y divide-smoke-200">
-        {reports.map((report) => (
+        {reports.map((report, index) => (
           <article
             key={report.id}
-            className={`relative transition ${
-              selectedReportId === report.id ? "bg-ember-50/70" : "bg-white hover:bg-smoke-50"
+            className={`motion-fade-up group relative transition duration-200 ${
+              selectedReportId === report.id
+                ? "bg-ember-50/70 shadow-[inset_0_0_0_1px_rgb(234_88_12_/_0.18)]"
+                : "bg-white hover:-translate-y-0.5 hover:bg-smoke-50 hover:shadow-[0_14px_32px_rgb(15_23_42_/_0.08)]"
             }`}
+            style={{ animationDelay: `${Math.min(index, 6) * 45}ms` }}
           >
             <span
-              className={`absolute bottom-0 left-0 top-0 w-1 ${getStatusRailClassName(report)}`}
+              className={`absolute bottom-0 left-0 top-0 w-1 transition-[width] duration-200 group-hover:w-1.5 ${getStatusRailClassName(report)}`}
               aria-hidden="true"
             />
             <div className="p-4 pl-5">
@@ -143,17 +146,17 @@ export function ReportList({
                 </span>
                 <div className="flex flex-wrap items-center gap-2">
                   <button
-                    className="inline-flex min-h-10 items-center gap-1.5 rounded-md bg-canopy-700 px-3 py-2 text-xs font-black text-white transition hover:bg-canopy-500"
+                    className="group/confirm hover-lift inline-flex min-h-10 items-center gap-1.5 rounded-md bg-canopy-700 px-3 py-2 text-xs font-black text-white hover:bg-canopy-500"
                     type="button"
                     onClick={() => {
                       void onConfirmReport(report.id);
                     }}
                   >
-                    <CheckCircle2 aria-hidden="true" size={14} />
+                    <CheckCircle2 aria-hidden="true" className="transition-transform duration-200 group-hover/confirm:scale-110" size={14} />
                     ยืนยันจุดนี้
                   </button>
                   <button
-                    className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-smoke-200 bg-white px-3 py-2 text-xs font-bold text-smoke-700 transition hover:border-smoke-400 hover:bg-smoke-50"
+                    className="hover-lift inline-flex min-h-10 items-center gap-1.5 rounded-md border border-smoke-200 bg-white px-3 py-2 text-xs font-bold text-smoke-700 hover:border-smoke-400 hover:bg-smoke-50"
                     type="button"
                     onClick={() => onFlagReport(report.id)}
                   >

@@ -1,3 +1,5 @@
+import { Reveal } from "@/components/ui/Reveal";
+
 interface SituationSummaryProps {
   totalReports: number;
   pendingCount: number;
@@ -21,7 +23,7 @@ export function SituationSummary({
   return (
     <section className="bg-[#07111f] px-4 pb-14">
       <div className="mx-auto max-w-[1440px]">
-        <div className="grid overflow-hidden rounded-lg border border-white/10 bg-[#f8f5ee] text-smoke-950 shadow-[0_24px_70px_rgb(0_0_0_/_0.28)] lg:grid-cols-[minmax(0,0.95fr)_minmax(420px,1.05fr)]">
+        <Reveal className="grid overflow-hidden rounded-lg border border-white/10 bg-[#f8f5ee] text-smoke-950 shadow-[0_24px_70px_rgb(0_0_0_/_0.28)] lg:grid-cols-[minmax(0,0.95fr)_minmax(420px,1.05fr)]">
           <div className="border-b border-smoke-200 p-5 md:p-7 lg:border-b-0 lg:border-r">
             <p className="text-xs font-black uppercase tracking-[0.22em] text-ember-700">
               Situation board
@@ -41,7 +43,7 @@ export function SituationSummary({
             </div>
             <div className="mt-8 h-2 overflow-hidden rounded-full bg-smoke-200">
               <div
-                className="h-full rounded-full bg-canopy-700"
+                className="h-full rounded-full bg-canopy-700 transition-[width] duration-700 ease-out"
                 style={{ width: `${verifiedPercent}%` }}
               />
             </div>
@@ -51,14 +53,14 @@ export function SituationSummary({
           </div>
 
           <div className="grid divide-y divide-smoke-200 md:grid-cols-3 md:divide-x md:divide-y-0">
-            <div className="p-5 md:p-6">
+            <div className="p-5 transition-colors duration-200 hover:bg-white/55 md:p-6">
               <p className="text-sm font-bold text-smoke-600">รายงานทั้งหมด</p>
               <p className="mt-4 text-4xl font-black tracking-tight">{totalReports}</p>
               <p className="mt-3 text-sm leading-6 text-smoke-600">
                 จุดที่แสดงในระบบตอนนี้ รวมทั้งรอยืนยันและยืนยันแล้ว
               </p>
             </div>
-            <div className="p-5 md:p-6">
+            <div className="p-5 transition-colors duration-200 hover:bg-canopy-50/55 md:p-6">
               <p className="text-sm font-bold text-smoke-600">ยืนยันแล้ว</p>
               <p className="mt-4 text-4xl font-black tracking-tight text-canopy-700">
                 {confirmedCount}
@@ -67,7 +69,7 @@ export function SituationSummary({
                 ผ่านเงื่อนไขรายงานใกล้เคียงในระยะ 500 เมตร / 60 นาที
               </p>
             </div>
-            <div className="p-5 md:p-6">
+            <div className="p-5 transition-colors duration-200 hover:bg-sky-50/70 md:p-6">
               <p className="text-sm font-bold text-smoke-600">ชั่วโมงล่าสุด</p>
               <p className="mt-4 text-4xl font-black tracking-tight text-sky-700">
                 {recentReportsCount}
@@ -77,7 +79,7 @@ export function SituationSummary({
               </p>
             </div>
           </div>
-        </div>
+        </Reveal>
       </div>
     </section>
   );

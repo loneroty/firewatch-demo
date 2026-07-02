@@ -339,7 +339,7 @@ export function FireWatchApp() {
       {statusFilters.map((filter) => (
         <button
           key={filter}
-          className={`rounded-md border px-3 py-2 text-sm font-bold transition ${
+          className={`hover-lift rounded-md border px-3 py-2 text-sm font-bold ${
             statusFilter === filter
               ? "border-slate-950 bg-slate-950 text-white shadow-sm"
               : "border-smoke-200 bg-smoke-50 text-smoke-700 hover:border-smoke-400 hover:bg-white"
@@ -375,7 +375,7 @@ export function FireWatchApp() {
       {systemMessage ? (
         <div
           aria-live="polite"
-          className="fixed bottom-4 left-4 right-4 z-50 mx-auto flex max-w-xl items-start gap-3 rounded-lg border border-ember-200 bg-[#fffaf3] p-4 text-sm font-semibold text-smoke-950 shadow-[0_22px_60px_rgb(15_23_42_/_0.2)] md:left-auto md:right-6"
+          className="motion-fade-up fixed bottom-4 left-4 right-4 z-50 mx-auto flex max-w-xl items-start gap-3 rounded-lg border border-ember-200 bg-[#fffaf3] p-4 text-sm font-semibold text-smoke-950 shadow-[0_22px_60px_rgb(15_23_42_/_0.2)] md:left-auto md:right-6"
           role="status"
         >
           <AlertTriangle aria-hidden="true" className="mt-0.5 shrink-0 text-ember-600" size={18} />

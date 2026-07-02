@@ -16,7 +16,7 @@ const defaultLocation = {
 };
 
 const inputClassName =
-  "h-12 w-full rounded-md border border-smoke-200 bg-white px-3 text-sm text-smoke-950 outline-none transition placeholder:text-smoke-400 focus:border-ember-600 focus:ring-4 focus:ring-ember-500/10";
+  "h-12 w-full rounded-md border border-smoke-200 bg-white px-3 text-sm text-smoke-950 outline-none transition duration-200 placeholder:text-smoke-400 focus:border-ember-600 focus:ring-4 focus:ring-ember-500/10";
 
 export function ReportForm({ onSubmit }: ReportFormProps) {
   const [category, setCategory] = useState<ReportCategory>("open_burning");
@@ -105,7 +105,7 @@ export function ReportForm({ onSubmit }: ReportFormProps) {
 
   return (
     <form className="space-y-5" onSubmit={handleSubmit}>
-      <fieldset className="rounded-md border border-smoke-200 bg-white p-3">
+      <fieldset className="rounded-md border border-smoke-200 bg-white p-3 transition-shadow duration-200 focus-within:shadow-[0_0_0_3px_rgb(249_115_22_/_0.08)]">
         <legend className="px-1 text-xs font-black uppercase tracking-[0.16em] text-smoke-500">
           Incident type
         </legend>
@@ -117,9 +117,9 @@ export function ReportForm({ onSubmit }: ReportFormProps) {
           {categoryOptions.map((option) => (
             <button
               key={option.value}
-              className={`min-h-12 rounded-md border px-3 py-2 text-left text-sm font-bold transition ${
+              className={`hover-lift min-h-12 rounded-md border px-3 py-2 text-left text-sm font-bold ${
                 category === option.value
-                  ? "border-ember-600 bg-ember-50 text-ember-700 shadow-[inset_4px_0_0_#ea580c]"
+                  ? "border-ember-600 bg-ember-50 text-ember-700 shadow-[inset_4px_0_0_#ea580c,0_10px_26px_rgb(234_88_12_/_0.12)]"
                   : "border-smoke-200 bg-smoke-50 text-smoke-700 hover:border-smoke-400 hover:bg-white"
               }`}
               type="button"
@@ -131,7 +131,7 @@ export function ReportForm({ onSubmit }: ReportFormProps) {
         </div>
       </fieldset>
 
-      <fieldset className="rounded-md border border-smoke-200 bg-white p-3">
+      <fieldset className="rounded-md border border-smoke-200 bg-white p-3 transition-shadow duration-200 focus-within:shadow-[0_0_0_3px_rgb(249_115_22_/_0.08)]">
         <legend className="px-1 text-xs font-black uppercase tracking-[0.16em] text-smoke-500">
           Severity
         </legend>
@@ -140,9 +140,9 @@ export function ReportForm({ onSubmit }: ReportFormProps) {
           {severityOptions.map((option) => (
             <button
               key={option.value}
-              className={`min-h-12 rounded-md border px-3 py-2 text-center text-sm font-bold transition ${
+              className={`hover-lift min-h-12 rounded-md border px-3 py-2 text-center text-sm font-bold ${
                 severity === option.value
-                  ? "border-slate-950 bg-slate-950 text-white"
+                  ? "border-slate-950 bg-slate-950 text-white shadow-[0_10px_24px_rgb(15_23_42_/_0.18)]"
                   : "border-smoke-200 bg-smoke-50 text-smoke-700 hover:border-smoke-400 hover:bg-white"
               }`}
               type="button"
@@ -154,7 +154,7 @@ export function ReportForm({ onSubmit }: ReportFormProps) {
         </div>
       </fieldset>
 
-      <fieldset className="rounded-md border border-smoke-200 bg-white p-3">
+      <fieldset className="rounded-md border border-smoke-200 bg-white p-3 transition-shadow duration-200 focus-within:shadow-[0_0_0_3px_rgb(249_115_22_/_0.08)]">
         <legend className="px-1 text-xs font-black uppercase tracking-[0.16em] text-smoke-500">
           Location
         </legend>
@@ -169,12 +169,12 @@ export function ReportForm({ onSubmit }: ReportFormProps) {
             />
           </label>
           <button
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-md border border-smoke-300 bg-smoke-950 px-4 text-sm font-bold text-white transition hover:bg-smoke-800 disabled:cursor-not-allowed disabled:opacity-60 sm:mt-7"
+            className="group hover-lift inline-flex h-12 items-center justify-center gap-2 rounded-md border border-smoke-300 bg-smoke-950 px-4 text-sm font-bold text-white hover:bg-smoke-800 disabled:cursor-not-allowed disabled:opacity-60 sm:mt-7"
             type="button"
             onClick={requestLocation}
             disabled={isLocating}
           >
-            <LocateFixed aria-hidden="true" size={18} />
+            <LocateFixed aria-hidden="true" className="transition-transform duration-200 group-hover:scale-105" size={18} />
             {isLocating ? "กำลังอ่าน" : "ใช้ GPS"}
           </button>
         </div>
@@ -201,14 +201,14 @@ export function ReportForm({ onSubmit }: ReportFormProps) {
         </div>
       </fieldset>
 
-      <fieldset className="rounded-md border border-smoke-200 bg-white p-3">
+      <fieldset className="rounded-md border border-smoke-200 bg-white p-3 transition-shadow duration-200 focus-within:shadow-[0_0_0_3px_rgb(249_115_22_/_0.08)]">
         <legend className="px-1 text-xs font-black uppercase tracking-[0.16em] text-smoke-500">
           Evidence
         </legend>
         <label className="block">
           <span className="mb-2 block text-sm font-bold text-smoke-950">รูปถ่าย</span>
-          <span className="flex min-h-16 items-center gap-3 rounded-md border border-dashed border-smoke-300 bg-smoke-50 px-3 py-3 text-sm text-smoke-700 transition hover:border-ember-500 hover:bg-ember-50">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-white text-ember-700 shadow-sm">
+          <span className="group flex min-h-16 items-center gap-3 rounded-md border border-dashed border-smoke-300 bg-smoke-50 px-3 py-3 text-sm text-smoke-700 transition duration-200 hover:-translate-y-0.5 hover:border-ember-500 hover:bg-ember-50">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-white text-ember-700 shadow-sm transition-transform duration-200 group-hover:scale-105">
               <Camera aria-hidden="true" size={20} />
             </span>
             <span className="min-w-0">
@@ -242,17 +242,17 @@ export function ReportForm({ onSubmit }: ReportFormProps) {
       </fieldset>
 
       {formError ? (
-        <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+        <p className="motion-fade-up rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
           {formError}
         </p>
       ) : null}
 
       <button
-        className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-md bg-ember-600 px-4 text-sm font-black text-white shadow-[0_14px_30px_rgb(234_88_12_/_0.22)] transition hover:bg-ember-700 disabled:cursor-not-allowed disabled:opacity-60"
+        className="group hover-lift inline-flex h-12 w-full items-center justify-center gap-2 rounded-md bg-ember-600 px-4 text-sm font-black text-white shadow-[0_14px_30px_rgb(234_88_12_/_0.22)] hover:bg-ember-700 hover:shadow-[0_18px_38px_rgb(234_88_12_/_0.28)] disabled:cursor-not-allowed disabled:opacity-60"
         type="submit"
         disabled={isSubmitting}
       >
-        <Send aria-hidden="true" size={18} />
+        <Send aria-hidden="true" className="transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" size={18} />
         {isSubmitting ? "กำลังส่งรายงาน" : "ส่งรายงานเข้าสู่ระบบ"}
       </button>
     </form>
