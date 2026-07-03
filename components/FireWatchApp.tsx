@@ -8,6 +8,7 @@ import { ReportList } from "@/components/ReportList";
 import { DemoModeSection } from "@/components/sections/DemoModeSection";
 import { HeroSection } from "@/components/sections/HeroSection";
 import { HowItWorksSection } from "@/components/sections/HowItWorksSection";
+import { IncidentIntelligenceSection } from "@/components/sections/IncidentIntelligenceSection";
 import { LatestReportsSection } from "@/components/sections/LatestReportsSection";
 import { LiveMapSection } from "@/components/sections/LiveMapSection";
 import { ReportFormSection } from "@/components/sections/ReportFormSection";
@@ -24,6 +25,7 @@ import {
   getRuntimeModeLabel,
   isFirebaseBackendConfigured
 } from "@/lib/firebase/config";
+import { buildAlertZones } from "@/lib/incidentIntelligence";
 import {
   getOrCreateLocalUserId,
   loadStoredReports,
@@ -192,6 +194,10 @@ export function FireWatchApp() {
     const ageMs = currentTimeMs - createdAt;
     return currentTimeMs > 0 && Number.isFinite(createdAt) && ageMs >= 0 && ageMs <= VERIFICATION_WINDOW_MS;
   }).length;
+  const alertZones = useMemo(
+    () => buildAlertZones(reports, currentTimeMs > 0 ? new Date(currentTimeMs) : new Date()),
+    [currentTimeMs, reports]
+  );
 
   const handleCreateReport = useCallback(
     async (draft: ReportDraft) => {
@@ -371,6 +377,7 @@ export function FireWatchApp() {
         confirmedCount={confirmedCount}
         recentReportsCount={recentReportsCount}
       />
+      <IncidentIntelligenceSection zones={alertZones} />
 
       {systemMessage ? (
         <div
