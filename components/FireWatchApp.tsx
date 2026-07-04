@@ -8,6 +8,7 @@ import { ReportList } from "@/components/ReportList";
 import { DemoModeSection } from "@/components/sections/DemoModeSection";
 import { HeroSection } from "@/components/sections/HeroSection";
 import { HowItWorksSection } from "@/components/sections/HowItWorksSection";
+import { IncidentDetailPanel } from "@/components/sections/IncidentDetailPanel";
 import { IncidentIntelligenceSection } from "@/components/sections/IncidentIntelligenceSection";
 import { LatestReportsSection } from "@/components/sections/LatestReportsSection";
 import { LiveMapSection } from "@/components/sections/LiveMapSection";
@@ -25,6 +26,7 @@ import {
   getRuntimeModeLabel,
   isFirebaseBackendConfigured
 } from "@/lib/firebase/config";
+import { buildIncidentDetail } from "@/lib/incidentDetail";
 import { buildAlertZones } from "@/lib/incidentIntelligence";
 import {
   getOrCreateLocalUserId,
@@ -206,6 +208,16 @@ export function FireWatchApp() {
         : null,
     [alertZones, selectedAlertZoneId]
   );
+  const selectedIncidentDetail = useMemo(
+    () =>
+      buildIncidentDetail(
+        activeSelectedAlertZoneId,
+        alertZones,
+        reports,
+        currentTimeMs > 0 ? new Date(currentTimeMs) : new Date()
+      ),
+    [activeSelectedAlertZoneId, alertZones, currentTimeMs, reports]
+  );
 
   const handleCreateReport = useCallback(
     async (draft: ReportDraft) => {
@@ -352,6 +364,10 @@ export function FireWatchApp() {
     setSelectedAlertZoneId(zoneId);
   }, []);
 
+  const handleClearAlertZone = useCallback(() => {
+    setSelectedAlertZoneId(null);
+  }, []);
+
   const filterControls = (
     <div className="flex flex-wrap gap-2">
       {statusFilters.map((filter) => (
@@ -394,6 +410,13 @@ export function FireWatchApp() {
         selectedAlertZoneId={activeSelectedAlertZoneId}
         onSelectAlertZone={handleSelectAlertZone}
       />
+
+      {selectedIncidentDetail ? (
+        <IncidentDetailPanel
+          detail={selectedIncidentDetail}
+          onClearAlertZone={handleClearAlertZone}
+        />
+      ) : null}
 
       {systemMessage ? (
         <div
