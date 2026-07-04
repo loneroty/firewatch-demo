@@ -1,7 +1,8 @@
 import type { Report } from "@/lib/types";
 import {
   buildAlertZones,
-  formatZoneAge
+  formatZoneAge,
+  getAlertZoneOverlayRadiusMeters
 } from "@/lib/incidentIntelligence";
 
 const now = new Date("2026-06-29T03:00:00.000Z");
@@ -140,5 +141,12 @@ describe("incident intelligence", () => {
     expect(formatZoneAge(12)).toBe("12 นาทีที่แล้ว");
     expect(formatZoneAge(125)).toBe("2 ชั่วโมงที่แล้ว");
     expect(formatZoneAge(1_500)).toBe("1 วันที่แล้ว");
+  });
+
+  it("caps alert zone overlay radius as report count grows", () => {
+    expect(getAlertZoneOverlayRadiusMeters(0)).toBe(500);
+    expect(getAlertZoneOverlayRadiusMeters(1)).toBe(500);
+    expect(getAlertZoneOverlayRadiusMeters(3)).toBe(700);
+    expect(getAlertZoneOverlayRadiusMeters(99)).toBe(900);
   });
 });

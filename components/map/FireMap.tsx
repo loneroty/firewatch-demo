@@ -3,6 +3,12 @@
 import L from "leaflet";
 import "leaflet.markercluster";
 import { useEffect, useMemo, useRef } from "react";
+import {
+  formatZoneAge,
+  getAlertZoneOverlayRadiusMeters,
+  type AlertZone,
+  type RiskLevel
+} from "@/lib/incidentIntelligence";
 import { getCategoryLabel, getSeverityLabel } from "@/lib/reportLabels";
 import type { Report, VerificationStatus } from "@/lib/types";
 
@@ -10,9 +16,33 @@ interface FireMapProps {
   reports: readonly Report[];
   selectedReport: Report | null;
   onSelectReport: (reportId: string) => void;
+  alertZones: readonly AlertZone[];
+  selectedAlertZoneId: string | null;
+  onSelectAlertZone: (zoneId: string) => void;
 }
 
 const defaultCenter: L.LatLngExpression = [18.7883, 98.9853];
+
+const alertZoneTone: Record<
+  RiskLevel,
+  {
+    color: string;
+    fillColor: string;
+  }
+> = {
+  "เฝ้าระวัง": {
+    color: "#d97706",
+    fillColor: "#f59e0b"
+  },
+  "น่ากังวล": {
+    color: "#ea580c",
+    fillColor: "#f97316"
+  },
+  "ควรตรวจสอบเร่งด่วน": {
+    color: "#dc2626",
+    fillColor: "#ef4444"
+  }
+};
 
 const statusMarker: Record<
   VerificationStatus,
@@ -49,10 +79,45 @@ function createReportIcon(report: Report): L.DivIcon {
   });
 }
 
-export function FireMap({ reports, selectedReport, onSelectReport }: FireMapProps) {
+function createAlertZonePopup(zone: AlertZone): string {
+  return `
+    <strong>${escapeHtml(zone.riskLevel)}</strong><br />
+    ${escapeHtml(String(zone.reportCount))} รายงาน · ล่าสุด ${escapeHtml(formatZoneAge(zone.latestReportAgeMinutes))}<br />
+    Severity สูงสุด ${escapeHtml(String(zone.maxSeverity))}
+  `;
+}
+
+function getAlertZonePathOptions(
+  zone: AlertZone,
+  isSelected: boolean
+): Omit<L.CircleMarkerOptions, "radius"> {
+  const tone = alertZoneTone[zone.riskLevel];
+
+  return {
+    color: tone.color,
+    fillColor: tone.fillColor,
+    fillOpacity: isSelected ? 0.22 : 0.13,
+    opacity: isSelected ? 0.9 : 0.58,
+    weight: isSelected ? 3 : 2,
+    dashArray: isSelected ? undefined : "7 6",
+    interactive: true
+  };
+}
+
+export function FireMap({
+  reports,
+  selectedReport,
+  onSelectReport,
+  alertZones,
+  selectedAlertZoneId,
+  onSelectAlertZone
+}: FireMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
+  const zoneLayerRef = useRef<L.LayerGroup | null>(null);
+  const zoneCircleRefs = useRef<Map<string, L.Circle>>(new Map());
+  const lastFocusedAlertZoneIdRef = useRef<string | null>(null);
 
   const visibleReports = useMemo(
     () => reports.filter((report) => report.moderationStatus !== "ถูกซ่อน"),
@@ -75,6 +140,9 @@ export function FireMap({ reports, selectedReport, onSelectReport }: FireMapProp
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     }).addTo(map);
 
+    const zoneLayer = L.layerGroup();
+    zoneLayer.addTo(map);
+
     const cluster = L.markerClusterGroup({
       showCoverageOnHover: false,
       maxClusterRadius: 48
@@ -83,13 +151,51 @@ export function FireMap({ reports, selectedReport, onSelectReport }: FireMapProp
     cluster.addTo(map);
     mapRef.current = map;
     clusterRef.current = cluster;
+    zoneLayerRef.current = zoneLayer;
+
+    const zoneCircleStore = zoneCircleRefs.current;
 
     return () => {
       map.remove();
       mapRef.current = null;
       clusterRef.current = null;
+      zoneLayerRef.current = null;
+      zoneCircleStore.clear();
     };
   }, []);
+
+  useEffect(() => {
+    const zoneLayer = zoneLayerRef.current;
+    if (!zoneLayer) {
+      return;
+    }
+
+    zoneLayer.clearLayers();
+    zoneCircleRefs.current.clear();
+
+    alertZones.forEach((zone) => {
+      const isSelected = zone.id === selectedAlertZoneId;
+      const circle = L.circle(
+        [zone.centerLat, zone.centerLng],
+        {
+          radius: getAlertZoneOverlayRadiusMeters(zone.reportCount),
+          ...getAlertZonePathOptions(zone, isSelected)
+        }
+      );
+
+      circle.bindPopup(createAlertZonePopup(zone), {
+        className: "firewatch-zone-popup",
+        maxWidth: 220
+      });
+      circle.on("click", () => {
+        onSelectAlertZone(zone.id);
+        circle.openPopup();
+      });
+      circle.addTo(zoneLayer);
+      circle.bringToBack();
+      zoneCircleRefs.current.set(zone.id, circle);
+    });
+  }, [alertZones, onSelectAlertZone, selectedAlertZoneId]);
 
   useEffect(() => {
     const cluster = clusterRef.current;
@@ -126,6 +232,32 @@ export function FireMap({ reports, selectedReport, onSelectReport }: FireMapProp
       duration: 0.6
     });
   }, [selectedReport]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+
+    if (!selectedAlertZoneId) {
+      lastFocusedAlertZoneIdRef.current = null;
+      return;
+    }
+
+    if (!map || lastFocusedAlertZoneIdRef.current === selectedAlertZoneId) {
+      return;
+    }
+
+    const selectedZone = alertZones.find((zone) => zone.id === selectedAlertZoneId);
+    if (!selectedZone) {
+      return;
+    }
+
+    const targetZoom = Math.min(Math.max(map.getZoom(), 14), 15);
+
+    lastFocusedAlertZoneIdRef.current = selectedAlertZoneId;
+    map.flyTo([selectedZone.centerLat, selectedZone.centerLng], targetZoom, {
+      duration: 0.55
+    });
+    zoneCircleRefs.current.get(selectedZone.id)?.openPopup();
+  }, [alertZones, selectedAlertZoneId]);
 
   return (
     <div

@@ -1,10 +1,13 @@
 import { AlertTriangle, Crosshair, RadioTower } from "lucide-react";
+import type { KeyboardEvent } from "react";
 import { Reveal } from "@/components/ui/Reveal";
 import type { AlertZone, RiskLevel } from "@/lib/incidentIntelligence";
 import { formatZoneAge } from "@/lib/incidentIntelligence";
 
 interface IncidentIntelligenceSectionProps {
   zones: readonly AlertZone[];
+  selectedAlertZoneId: string | null;
+  onSelectAlertZone: (zoneId: string) => void;
 }
 
 const riskToneClassNames: Record<RiskLevel, string> = {
@@ -18,9 +21,23 @@ function formatCoordinate(value: number): string {
 }
 
 export function IncidentIntelligenceSection({
-  zones
+  zones,
+  selectedAlertZoneId,
+  onSelectAlertZone
 }: IncidentIntelligenceSectionProps) {
   const priorityZones = zones.slice(0, 3);
+
+  function handleZoneKeyDown(
+    event: KeyboardEvent<HTMLElement>,
+    zoneId: string
+  ): void {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+
+    event.preventDefault();
+    onSelectAlertZone(zoneId);
+  }
 
   return (
     <section className="bg-[#07111f] px-4 pb-16 text-white md:pb-20">
@@ -63,72 +80,86 @@ export function IncidentIntelligenceSection({
 
               {priorityZones.length > 0 ? (
                 <div className="divide-y divide-white/10">
-                  {priorityZones.map((zone, index) => (
-                    <article
-                      key={zone.id}
-                      className="group grid gap-4 p-4 transition-colors duration-200 hover:bg-white/[0.04] md:grid-cols-[76px_1fr]"
-                    >
-                      <div className="flex items-start gap-3 md:block">
-                        <span className="grid h-12 w-12 place-items-center rounded-md border border-white/10 bg-[#07111f] font-mono text-sm font-black text-ember-200">
-                          0{index + 1}
-                        </span>
-                        <span className="mt-2 hidden h-px w-full bg-white/10 md:block" />
-                      </div>
+                  {priorityZones.map((zone, index) => {
+                    const isSelected = zone.id === selectedAlertZoneId;
 
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div>
-                            <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">
-                              {zone.primaryAddressLabel}
-                            </p>
-                            <h3 className="mt-2 text-xl font-black leading-tight text-white">
-                              Zone {zone.reportIds[0]?.slice(-6) ?? index + 1}
-                            </h3>
-                          </div>
-                          <span
-                            className={`rounded-full border px-3 py-1 text-xs font-black ${riskToneClassNames[zone.riskLevel]}`}
-                          >
-                            {zone.riskLevel}
+                    return (
+                      <article
+                        key={zone.id}
+                        aria-label={`เลือก alert zone ${index + 1}: ${zone.riskLevel}`}
+                        aria-pressed={isSelected}
+                        className={`group grid w-full cursor-pointer gap-4 p-4 text-left outline-none transition duration-200 md:grid-cols-[76px_1fr] ${
+                          isSelected
+                            ? "bg-white/[0.08] ring-1 ring-ember-300/60"
+                            : "hover:bg-white/[0.04]"
+                        } focus-visible:bg-white/[0.06] focus-visible:ring-2 focus-visible:ring-ember-300/70`}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => onSelectAlertZone(zone.id)}
+                        onKeyDown={(event) => handleZoneKeyDown(event, zone.id)}
+                      >
+                        <div className="flex items-start gap-3 md:block">
+                          <span className="grid h-12 w-12 place-items-center rounded-md border border-white/10 bg-[#07111f] font-mono text-sm font-black text-ember-200">
+                            0{index + 1}
                           </span>
+                          <span className="mt-2 hidden h-px w-full bg-white/10 md:block" />
                         </div>
 
-                        <div className="mt-4 grid gap-3 text-sm text-slate-300 sm:grid-cols-2 lg:grid-cols-4">
-                          <div className="border-l border-white/10 pl-3">
-                            <p className="text-xs text-slate-500">รายงาน</p>
-                            <p className="mt-1 font-black text-white">{zone.reportCount}</p>
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                              <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">
+                                {zone.primaryAddressLabel}
+                              </p>
+                              <h3 className="mt-2 text-xl font-black leading-tight text-white">
+                                Zone {zone.reportIds[0]?.slice(-6) ?? index + 1}
+                              </h3>
+                            </div>
+                            <span
+                              className={`rounded-full border px-3 py-1 text-xs font-black ${riskToneClassNames[zone.riskLevel]}`}
+                            >
+                              {zone.riskLevel}
+                            </span>
                           </div>
-                          <div className="border-l border-white/10 pl-3">
-                            <p className="text-xs text-slate-500">Severity</p>
-                            <p className="mt-1 font-black text-white">
-                              สูงสุด {zone.maxSeverity} / เฉลี่ย {zone.averageSeverity}
-                            </p>
-                          </div>
-                          <div className="border-l border-white/10 pl-3">
-                            <p className="text-xs text-slate-500">ล่าสุด</p>
-                            <p className="mt-1 font-black text-white">
-                              {formatZoneAge(zone.latestReportAgeMinutes)}
-                            </p>
-                          </div>
-                          <div className="border-l border-white/10 pl-3">
-                            <p className="text-xs text-slate-500">พิกัดกลาง</p>
-                            <p className="mt-1 font-black text-white">
-                              {formatCoordinate(zone.centerLat)}, {formatCoordinate(zone.centerLng)}
-                            </p>
-                          </div>
-                        </div>
 
-                        <div className="mt-4 rounded-md border border-white/10 bg-[#07111f]/70 p-3">
-                          <p className="flex items-center gap-2 text-sm font-black text-ember-100">
-                            <AlertTriangle aria-hidden="true" size={16} />
-                            เหตุผลที่ควรดู
-                          </p>
-                          <p className="mt-2 text-sm leading-6 text-slate-300">
-                            {zone.riskFactors.join(" · ")}
-                          </p>
+                          <div className="mt-4 grid gap-3 text-sm text-slate-300 sm:grid-cols-2 lg:grid-cols-4">
+                            <div className="border-l border-white/10 pl-3">
+                              <p className="text-xs text-slate-500">รายงาน</p>
+                              <p className="mt-1 font-black text-white">{zone.reportCount}</p>
+                            </div>
+                            <div className="border-l border-white/10 pl-3">
+                              <p className="text-xs text-slate-500">Severity</p>
+                              <p className="mt-1 font-black text-white">
+                                สูงสุด {zone.maxSeverity} / เฉลี่ย {zone.averageSeverity}
+                              </p>
+                            </div>
+                            <div className="border-l border-white/10 pl-3">
+                              <p className="text-xs text-slate-500">ล่าสุด</p>
+                              <p className="mt-1 font-black text-white">
+                                {formatZoneAge(zone.latestReportAgeMinutes)}
+                              </p>
+                            </div>
+                            <div className="border-l border-white/10 pl-3">
+                              <p className="text-xs text-slate-500">พิกัดกลาง</p>
+                              <p className="mt-1 font-black text-white">
+                                {formatCoordinate(zone.centerLat)}, {formatCoordinate(zone.centerLng)}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="mt-4 rounded-md border border-white/10 bg-[#07111f]/70 p-3">
+                            <p className="flex items-center gap-2 text-sm font-black text-ember-100">
+                              <AlertTriangle aria-hidden="true" size={16} />
+                              เหตุผลที่ควรดู
+                            </p>
+                            <p className="mt-2 text-sm leading-6 text-slate-300">
+                              {zone.riskFactors.join(" · ")}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    </article>
-                  ))}
+                      </article>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="grid min-h-56 place-items-center p-6 text-center">

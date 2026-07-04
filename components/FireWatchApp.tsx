@@ -102,6 +102,7 @@ export function FireWatchApp() {
   const [reputationScore, setReputationScore] = useState(35);
   const [systemMessage, setSystemMessage] = useState<string | null>(null);
   const [currentTimeMs, setCurrentTimeMs] = useState(0);
+  const [selectedAlertZoneId, setSelectedAlertZoneId] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -197,6 +198,13 @@ export function FireWatchApp() {
   const alertZones = useMemo(
     () => buildAlertZones(reports, currentTimeMs > 0 ? new Date(currentTimeMs) : new Date()),
     [currentTimeMs, reports]
+  );
+  const activeSelectedAlertZoneId = useMemo(
+    () =>
+      selectedAlertZoneId && alertZones.some((zone) => zone.id === selectedAlertZoneId)
+        ? selectedAlertZoneId
+        : null,
+    [alertZones, selectedAlertZoneId]
   );
 
   const handleCreateReport = useCallback(
@@ -340,6 +348,10 @@ export function FireWatchApp() {
     setSystemMessage("บันทึกการรายงานความไม่เหมาะสมแล้ว");
   }, []);
 
+  const handleSelectAlertZone = useCallback((zoneId: string) => {
+    setSelectedAlertZoneId(zoneId);
+  }, []);
+
   const filterControls = (
     <div className="flex flex-wrap gap-2">
       {statusFilters.map((filter) => (
@@ -377,7 +389,11 @@ export function FireWatchApp() {
         confirmedCount={confirmedCount}
         recentReportsCount={recentReportsCount}
       />
-      <IncidentIntelligenceSection zones={alertZones} />
+      <IncidentIntelligenceSection
+        zones={alertZones}
+        selectedAlertZoneId={activeSelectedAlertZoneId}
+        onSelectAlertZone={handleSelectAlertZone}
+      />
 
       {systemMessage ? (
         <div
@@ -395,6 +411,9 @@ export function FireWatchApp() {
           reports={visibleReports}
           selectedReport={selectedReport}
           onSelectReport={setSelectedReportId}
+          alertZones={alertZones}
+          selectedAlertZoneId={activeSelectedAlertZoneId}
+          onSelectAlertZone={handleSelectAlertZone}
         />
       </LiveMapSection>
 

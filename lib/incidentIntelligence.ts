@@ -7,6 +7,8 @@ export const FRESH_REPORT_MINUTES = 60;
 export const AGING_REPORT_MINUTES = 180;
 export const CONCERN_RISK_SCORE = 5;
 export const URGENT_RISK_SCORE = 7;
+export const ALERT_ZONE_RADIUS_STEP_METERS = 100;
+export const ALERT_ZONE_MAX_OVERLAY_RADIUS_METERS = 900;
 
 export type RiskLevel = "เฝ้าระวัง" | "น่ากังวล" | "ควรตรวจสอบเร่งด่วน";
 
@@ -25,6 +27,15 @@ export interface AlertZone {
   riskScore: number;
   primaryAddressLabel: string;
   riskFactors: string[];
+}
+
+export function getAlertZoneOverlayRadiusMeters(reportCount: number): number {
+  const normalizedReportCount = Math.max(1, Math.floor(reportCount));
+  const expandedRadius =
+    ALERT_ZONE_RADIUS_METERS +
+    (normalizedReportCount - 1) * ALERT_ZONE_RADIUS_STEP_METERS;
+
+  return Math.min(expandedRadius, ALERT_ZONE_MAX_OVERLAY_RADIUS_METERS);
 }
 
 interface EligibleReport extends Report {
