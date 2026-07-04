@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ReportForm } from "@/components/ReportForm";
 import { ReportList } from "@/components/ReportList";
 import { DemoModeSection } from "@/components/sections/DemoModeSection";
+import { EmergencyHandoffPanel } from "@/components/ui/EmergencyHandoffPanel";
 import { HeroSection } from "@/components/sections/HeroSection";
 import { HowItWorksSection } from "@/components/sections/HowItWorksSection";
 import { IncidentDetailPanel } from "@/components/sections/IncidentDetailPanel";
@@ -27,6 +28,7 @@ import {
   getRuntimeModeLabel,
   isFirebaseBackendConfigured
 } from "@/lib/firebase/config";
+import { buildReportHandoffSummary } from "@/lib/emergencyHandoff";
 import { buildIncidentDetail } from "@/lib/incidentDetail";
 import { buildAlertZones } from "@/lib/incidentIntelligence";
 import {
@@ -192,6 +194,10 @@ export function FireWatchApp() {
   const selectedReport = useMemo(
     () => reports.find((report) => report.id === selectedReportId) ?? null,
     [reports, selectedReportId]
+  );
+  const selectedReportHandoffSummary = useMemo(
+    () => (selectedReport ? buildReportHandoffSummary(selectedReport) : null),
+    [selectedReport]
   );
 
   const confirmedCount = reports.filter(
@@ -480,6 +486,11 @@ export function FireWatchApp() {
       </ReportFormSection>
 
       <LatestReportsSection hiddenCount={hiddenCount} filters={filterControls}>
+        {selectedReportHandoffSummary ? (
+          <div className="border-b border-smoke-200 bg-[#fffaf3] p-4">
+            <EmergencyHandoffPanel summary={selectedReportHandoffSummary} />
+          </div>
+        ) : null}
         <ReportList
           reports={visibleReports}
           selectedReportId={selectedReportId}

@@ -12,6 +12,8 @@ import type {
   IncidentTimelineEvent,
   IncidentTimelineEventKind
 } from "@/lib/incidentDetail";
+import { EmergencyHandoffPanel } from "@/components/ui/EmergencyHandoffPanel";
+import { buildAlertZoneHandoffSummary } from "@/lib/emergencyHandoff";
 import type { RiskLevel } from "@/lib/incidentIntelligence";
 import { formatZoneAge } from "@/lib/incidentIntelligence";
 
@@ -95,6 +97,7 @@ export function IncidentDetailPanel({
   onClearAlertZone
 }: IncidentDetailPanelProps) {
   const zone = detail.zone;
+  const handoffSummary = buildAlertZoneHandoffSummary(zone);
 
   return (
     <section
@@ -194,7 +197,10 @@ export function IncidentDetailPanel({
             </div>
           </div>
 
-          <RecommendationBlock recommendation={detail.recommendation} />
+          <div className="space-y-5">
+            <RecommendationBlock recommendation={detail.recommendation} />
+            <EmergencyHandoffPanel summary={handoffSummary} tone="dark" />
+          </div>
         </div>
 
         <div className="border-t border-white/10 p-4 lg:p-5">

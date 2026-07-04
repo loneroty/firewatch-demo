@@ -1,7 +1,8 @@
 "use client";
 
-import { Camera, LocateFixed, Send } from "lucide-react";
-import { FormEvent, useState } from "react";
+import dynamic from "next/dynamic";
+import { Camera, LocateFixed, MapPinned, RotateCcw, Send } from "lucide-react";
+import { FormEvent, useMemo, useState } from "react";
 import { compressImageForReport } from "@/lib/imageCompression";
 import { categoryOptions, severityOptions } from "@/lib/reportLabels";
 import type { ReportCategory, ReportDraft, Severity } from "@/lib/types";
@@ -15,8 +16,38 @@ const defaultLocation = {
   lng: 98.9853
 };
 
+const IncidentLocationPicker = dynamic(
+  () =>
+    import("@/components/map/IncidentLocationPicker").then(
+      (module) => module.IncidentLocationPicker
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="grid h-[280px] place-items-center rounded-md border border-smoke-200 bg-smoke-100 text-smoke-600 md:h-[320px]">
+        กำลังโหลดแผนที่เลือกตำแหน่งเหตุ
+      </div>
+    )
+  }
+);
+
 const inputClassName =
   "h-12 w-full rounded-md border border-smoke-200 bg-white px-3 text-sm text-smoke-950 outline-none transition duration-200 placeholder:text-smoke-400 focus:border-ember-600 focus:ring-4 focus:ring-ember-500/10";
+
+function formatCoordinate(value: number): string {
+  return value.toFixed(6);
+}
+
+function isValidIncidentLocation(lat: number, lng: number): boolean {
+  return (
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180
+  );
+}
 
 export function ReportForm({ onSubmit }: ReportFormProps) {
   const [category, setCategory] = useState<ReportCategory>("open_burning");
@@ -26,9 +57,30 @@ export function ReportForm({ onSubmit }: ReportFormProps) {
   const [addressLabel, setAddressLabel] = useState("เชียงใหม่");
   const [notes, setNotes] = useState("");
   const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [lastGpsLocation, setLastGpsLocation] = useState<typeof defaultLocation | null>(null);
+  const [gpsAccuracyMeters, setGpsAccuracyMeters] = useState<number | null>(null);
   const [isLocating, setIsLocating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  const incidentLocation = useMemo(() => {
+    const parsedLat = Number(lat);
+    const parsedLng = Number(lng);
+
+    if (isValidIncidentLocation(parsedLat, parsedLng)) {
+      return {
+        lat: parsedLat,
+        lng: parsedLng
+      };
+    }
+
+    return defaultLocation;
+  }, [lat, lng]);
+
+  function setIncidentLocation(location: typeof defaultLocation): void {
+    setLat(formatCoordinate(location.lat));
+    setLng(formatCoordinate(location.lng));
+  }
 
   function requestLocation(): void {
     if (!navigator.geolocation) {
@@ -41,8 +93,15 @@ export function ReportForm({ onSubmit }: ReportFormProps) {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setLat(position.coords.latitude.toFixed(6));
-        setLng(position.coords.longitude.toFixed(6));
+        const nextLocation = {
+          lat: Number(position.coords.latitude.toFixed(6)),
+          lng: Number(position.coords.longitude.toFixed(6))
+        };
+        const accuracy = position.coords.accuracy;
+
+        setIncidentLocation(nextLocation);
+        setLastGpsLocation(nextLocation);
+        setGpsAccuracyMeters(Number.isFinite(accuracy) ? Math.round(accuracy) : null);
         setIsLocating(false);
       },
       () => {
@@ -55,6 +114,16 @@ export function ReportForm({ onSubmit }: ReportFormProps) {
         maximumAge: 60_000
       }
     );
+  }
+
+  function resetToGpsLocation(): void {
+    if (!lastGpsLocation) {
+      setFormError("ยังไม่มีตำแหน่ง GPS ล่าสุด ให้กดใช้ GPS ก่อน");
+      return;
+    }
+
+    setFormError(null);
+    setIncidentLocation(lastGpsLocation);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
@@ -156,8 +225,15 @@ export function ReportForm({ onSubmit }: ReportFormProps) {
 
       <fieldset className="rounded-md border border-smoke-200 bg-white p-3 transition-shadow duration-200 focus-within:shadow-[0_0_0_3px_rgb(249_115_22_/_0.08)]">
         <legend className="px-1 text-xs font-black uppercase tracking-[0.16em] text-smoke-500">
-          Location
+          Incident location
         </legend>
+        <div className="mb-4 rounded-md border border-ember-200 bg-ember-50 p-3 text-sm leading-6 text-ember-900">
+          <p className="font-black">ตำแหน่งรายงานคือหมุดที่คุณเลือก</p>
+          <p className="mt-1">
+            ไม่จำเป็นต้องยืนอยู่ตรงจุดไฟ ให้ลากหมุดไปยังจุดที่เห็นควัน/ไฟ
+            และใช้ GPS เป็นจุดเริ่มต้นเท่านั้น
+          </p>
+        </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto]">
           <label className="block">
             <span className="mb-2 block text-sm font-bold text-smoke-950">พื้นที่</span>
@@ -176,6 +252,40 @@ export function ReportForm({ onSubmit }: ReportFormProps) {
           >
             <LocateFixed aria-hidden="true" className="transition-transform duration-200 group-hover:scale-105" size={18} />
             {isLocating ? "กำลังอ่าน" : "ใช้ GPS"}
+          </button>
+        </div>
+
+        <div className="mt-4">
+          <IncidentLocationPicker
+            lat={incidentLocation.lat}
+            lng={incidentLocation.lng}
+            onLocationChange={setIncidentLocation}
+          />
+        </div>
+
+        <div className="mt-3 grid gap-3 rounded-md border border-smoke-200 bg-smoke-50 p-3 text-sm text-smoke-700 sm:grid-cols-[1fr_auto] sm:items-center">
+          <div>
+            <p className="flex items-center gap-2 font-black text-smoke-950">
+              <MapPinned aria-hidden="true" size={16} />
+              หมุดเหตุ: {formatCoordinate(incidentLocation.lat)}, {formatCoordinate(incidentLocation.lng)}
+            </p>
+            <p className="mt-1 leading-6">
+              GPS ใช้เป็นจุดเริ่มต้นเท่านั้น ตำแหน่งที่ส่งคือหมุดเหตุบนแผนที่และค่า lat/lng ด้านล่าง
+            </p>
+            {gpsAccuracyMeters !== null ? (
+              <p className="mt-1 font-semibold text-smoke-600">
+                ความแม่นยำ GPS ประมาณ {gpsAccuracyMeters} เมตร
+              </p>
+            ) : null}
+          </div>
+          <button
+            className="hover-lift inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-smoke-300 bg-white px-3 py-2 text-sm font-bold text-smoke-700 hover:border-smoke-500 disabled:cursor-not-allowed disabled:opacity-50"
+            type="button"
+            disabled={!lastGpsLocation}
+            onClick={resetToGpsLocation}
+          >
+            <RotateCcw aria-hidden="true" size={15} />
+            กลับไปตำแหน่ง GPS
           </button>
         </div>
 
