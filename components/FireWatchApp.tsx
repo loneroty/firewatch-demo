@@ -14,6 +14,7 @@ import { LatestReportsSection } from "@/components/sections/LatestReportsSection
 import { LiveMapSection } from "@/components/sections/LiveMapSection";
 import { ReportFormSection } from "@/components/sections/ReportFormSection";
 import { SituationSummary } from "@/components/sections/SituationSummary";
+import { SmokeSimulationPanel } from "@/components/sections/SmokeSimulationPanel";
 import { TopNav } from "@/components/sections/TopNav";
 import { TrustSecuritySection } from "@/components/sections/TrustSecuritySection";
 import {
@@ -28,6 +29,11 @@ import {
 } from "@/lib/firebase/config";
 import { buildIncidentDetail } from "@/lib/incidentDetail";
 import { buildAlertZones } from "@/lib/incidentIntelligence";
+import {
+  buildSmokePlume,
+  type SmokePlumeOptions,
+  type WindSpeedLevel
+} from "@/lib/smokePlume";
 import {
   getOrCreateLocalUserId,
   loadStoredReports,
@@ -105,6 +111,9 @@ export function FireWatchApp() {
   const [systemMessage, setSystemMessage] = useState<string | null>(null);
   const [currentTimeMs, setCurrentTimeMs] = useState(0);
   const [selectedAlertZoneId, setSelectedAlertZoneId] = useState<string | null>(null);
+  const [isSmokePlumeEnabled, setIsSmokePlumeEnabled] = useState(true);
+  const [windDirectionDegrees, setWindDirectionDegrees] = useState(45);
+  const [windSpeedLevel, setWindSpeedLevel] = useState<WindSpeedLevel>("ปานกลาง");
 
   useEffect(() => {
     let isMounted = true;
@@ -208,6 +217,10 @@ export function FireWatchApp() {
         : null,
     [alertZones, selectedAlertZoneId]
   );
+  const selectedAlertZone = useMemo(
+    () => alertZones.find((zone) => zone.id === activeSelectedAlertZoneId) ?? null,
+    [activeSelectedAlertZoneId, alertZones]
+  );
   const selectedIncidentDetail = useMemo(
     () =>
       buildIncidentDetail(
@@ -217,6 +230,18 @@ export function FireWatchApp() {
         currentTimeMs > 0 ? new Date(currentTimeMs) : new Date()
       ),
     [activeSelectedAlertZoneId, alertZones, currentTimeMs, reports]
+  );
+  const smokePlumeOptions = useMemo<SmokePlumeOptions>(
+    () => ({
+      enabled: isSmokePlumeEnabled,
+      windDirectionDegrees,
+      windSpeedLevel
+    }),
+    [isSmokePlumeEnabled, windDirectionDegrees, windSpeedLevel]
+  );
+  const smokePlume = useMemo(
+    () => buildSmokePlume(selectedAlertZone, smokePlumeOptions),
+    [selectedAlertZone, smokePlumeOptions]
   );
 
   const handleCreateReport = useCallback(
@@ -411,6 +436,15 @@ export function FireWatchApp() {
         onSelectAlertZone={handleSelectAlertZone}
       />
 
+      <SmokeSimulationPanel
+        plume={smokePlume}
+        selectedZone={selectedAlertZone}
+        settings={smokePlumeOptions}
+        onEnabledChange={setIsSmokePlumeEnabled}
+        onWindDirectionChange={setWindDirectionDegrees}
+        onWindSpeedLevelChange={setWindSpeedLevel}
+      />
+
       {selectedIncidentDetail ? (
         <IncidentDetailPanel
           detail={selectedIncidentDetail}
@@ -436,6 +470,7 @@ export function FireWatchApp() {
           onSelectReport={setSelectedReportId}
           alertZones={alertZones}
           selectedAlertZoneId={activeSelectedAlertZoneId}
+          smokePlume={smokePlume}
           onSelectAlertZone={handleSelectAlertZone}
         />
       </LiveMapSection>

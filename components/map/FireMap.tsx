@@ -10,6 +10,7 @@ import {
   type RiskLevel
 } from "@/lib/incidentIntelligence";
 import { getCategoryLabel, getSeverityLabel } from "@/lib/reportLabels";
+import type { SmokePlume } from "@/lib/smokePlume";
 import type { Report, VerificationStatus } from "@/lib/types";
 
 interface FireMapProps {
@@ -18,6 +19,7 @@ interface FireMapProps {
   onSelectReport: (reportId: string) => void;
   alertZones: readonly AlertZone[];
   selectedAlertZoneId: string | null;
+  smokePlume: SmokePlume | null;
   onSelectAlertZone: (zoneId: string) => void;
 }
 
@@ -41,6 +43,31 @@ const alertZoneTone: Record<
   "ควรตรวจสอบเร่งด่วน": {
     color: "#dc2626",
     fillColor: "#ef4444"
+  }
+};
+
+const smokePlumeTone: Record<
+  RiskLevel,
+  {
+    color: string;
+    fillColor: string;
+    fillOpacity: number;
+  }
+> = {
+  "เฝ้าระวัง": {
+    color: "#d97706",
+    fillColor: "#fbbf24",
+    fillOpacity: 0.1
+  },
+  "น่ากังวล": {
+    color: "#ea580c",
+    fillColor: "#fb923c",
+    fillOpacity: 0.12
+  },
+  "ควรตรวจสอบเร่งด่วน": {
+    color: "#dc2626",
+    fillColor: "#f87171",
+    fillOpacity: 0.14
   }
 };
 
@@ -104,17 +131,35 @@ function getAlertZonePathOptions(
   };
 }
 
+function getSmokePlumePathOptions(plume: SmokePlume): L.PolylineOptions {
+  const tone = smokePlumeTone[plume.riskLevel];
+
+  return {
+    color: tone.color,
+    fillColor: tone.fillColor,
+    fillOpacity: tone.fillOpacity,
+    opacity: 0.36,
+    weight: 2,
+    dashArray: "12 10",
+    interactive: false,
+    bubblingMouseEvents: false,
+    smoothFactor: 1.2
+  };
+}
+
 export function FireMap({
   reports,
   selectedReport,
   onSelectReport,
   alertZones,
   selectedAlertZoneId,
+  smokePlume,
   onSelectAlertZone
 }: FireMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
+  const plumeLayerRef = useRef<L.LayerGroup | null>(null);
   const zoneLayerRef = useRef<L.LayerGroup | null>(null);
   const zoneCircleRefs = useRef<Map<string, L.Circle>>(new Map());
   const lastFocusedAlertZoneIdRef = useRef<string | null>(null);
@@ -140,6 +185,9 @@ export function FireMap({
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     }).addTo(map);
 
+    const plumeLayer = L.layerGroup();
+    plumeLayer.addTo(map);
+
     const zoneLayer = L.layerGroup();
     zoneLayer.addTo(map);
 
@@ -151,6 +199,7 @@ export function FireMap({
     cluster.addTo(map);
     mapRef.current = map;
     clusterRef.current = cluster;
+    plumeLayerRef.current = plumeLayer;
     zoneLayerRef.current = zoneLayer;
 
     const zoneCircleStore = zoneCircleRefs.current;
@@ -159,10 +208,31 @@ export function FireMap({
       map.remove();
       mapRef.current = null;
       clusterRef.current = null;
+      plumeLayerRef.current = null;
       zoneLayerRef.current = null;
       zoneCircleStore.clear();
     };
   }, []);
+
+  useEffect(() => {
+    const plumeLayer = plumeLayerRef.current;
+    if (!plumeLayer) {
+      return;
+    }
+
+    plumeLayer.clearLayers();
+    if (!smokePlume) {
+      return;
+    }
+
+    const polygon = L.polygon(
+      smokePlume.polygon.map((point) => [point.lat, point.lng]),
+      getSmokePlumePathOptions(smokePlume)
+    );
+
+    polygon.addTo(plumeLayer);
+    polygon.bringToBack();
+  }, [smokePlume]);
 
   useEffect(() => {
     const zoneLayer = zoneLayerRef.current;
