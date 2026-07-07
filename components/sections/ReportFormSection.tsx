@@ -10,18 +10,23 @@ interface ReportFormSectionProps {
 const intakeNotes = [
   {
     label: "01",
-    title: "หลักฐาน",
-    body: "แนบรูปจริงจากพื้นที่ ระบบบีบอัดก่อนส่งเพื่อให้มือถือใช้งานได้เร็วขึ้น"
+    title: "เลือกตำแหน่งเหตุ",
+    body: "ใช้ GPS เป็นจุดเริ่มต้น แล้วลากหมุดไปยังจุดควัน/ไฟที่เห็นจริง"
   },
   {
     label: "02",
-    title: "ตำแหน่ง",
-    body: "ใช้ GPS หรือกรอกพิกัดเอง เหมาะกับการสาธิตบนเวทีและการลงพื้นที่จริง"
+    title: "ระบุประเภท",
+    body: "เลือกประเภทและความรุนแรงเพื่อให้แผนที่และ alert zone อ่านง่าย"
   },
   {
     label: "03",
-    title: "ตรวจฝั่ง server",
-    body: "backend mode สร้างรายงานผ่าน callable function พร้อม validation และ rate limit"
+    title: "เพิ่มหลักฐาน",
+    body: "แนบรูปและบันทึกสั้น ๆ เพื่อช่วยให้คนอื่นตรวจสอบรายงานได้"
+  },
+  {
+    label: "04",
+    title: "ส่งเข้าระบบ",
+    body: "local demo บันทึกในเครื่อง ส่วน backend mode จะผ่าน Storage และ callable function"
   }
 ];
 
@@ -34,11 +39,10 @@ export function ReportFormSection({ systemMessage, children }: ReportFormSection
             Report intake
           </p>
           <h2 className="max-w-3xl text-3xl font-black tracking-tight md:text-5xl">
-            แจ้งเหตุให้ครบพอสำหรับการตัดสินใจ
+            แจ้งเหตุเป็นขั้นตอน ไม่ต้องเดาว่าต้องทำอะไรก่อน
           </h2>
           <p className="mt-5 max-w-2xl text-base leading-7 text-slate-300">
-            ฟอร์มนี้ออกแบบเหมือนจุดรับเรื่องภาคสนาม: เก็บประเภทเหตุการณ์
-            ความรุนแรง รูปถ่าย และพิกัด โดยไม่ให้ client ตั้งสถานะยืนยันเอง
+            ฟอร์มนี้เน้นตำแหน่งเหตุเป็นหลัก: ผู้แจ้งไม่จำเป็นต้องยืนตรงจุดไฟ แต่ต้องเลือกหมุดให้ตรงกับจุดควัน/ไฟที่เห็น
           </p>
 
           <div className="mt-8 divide-y divide-white/10 border-y border-white/10">

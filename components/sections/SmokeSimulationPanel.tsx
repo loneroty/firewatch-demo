@@ -35,8 +35,8 @@ export function SmokeSimulationPanel({
   const isControlDisabled = !selectedZone;
 
   return (
-    <section className="bg-[#07111f] px-4 pb-16 text-white md:pb-20">
-      <div className="mx-auto max-w-[1440px] rounded-lg border border-white/10 bg-[#0b1728] p-4 shadow-[0_24px_70px_rgb(0_0_0_/_0.18)] md:p-5">
+    <div className="text-white">
+      <div className="rounded-lg border border-white/10 bg-[#0b1728] p-4 shadow-[0_24px_70px_rgb(0_0_0_/_0.18)] md:p-5">
         <div className="grid gap-5 lg:grid-cols-[minmax(280px,0.45fr)_minmax(0,1fr)] lg:items-start">
           <div>
             <p className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.22em] text-ember-100">
@@ -175,6 +175,6 @@ export function SmokeSimulationPanel({
           </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 }

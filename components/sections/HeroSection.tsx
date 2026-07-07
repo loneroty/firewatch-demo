@@ -34,9 +34,8 @@ export function HeroSection({
             <span className="block text-slate-300">ก่อนจุดเล็กกลายเป็นวิกฤต</span>
           </h1>
           <p className="motion-fade-up motion-delay-2 mt-5 max-w-3xl text-base leading-7 text-slate-300 md:text-xl md:leading-8">
-            FireWatch รวมรายงานควัน ไฟป่า และจุดเผาจากประชาชน พร้อมรูปถ่าย
-            พิกัด และการยืนยันจากรายงานใกล้เคียง
-            เพื่อให้คนในพื้นที่เห็นสถานการณ์เดียวกันแบบทันเวลา
+            FireWatch ทำให้การแจ้งควัน/ไฟป่าเป็น flow เดียว: ปักหมุดจุดเหตุ ดูแผนที่สด
+            วิเคราะห์พื้นที่เสี่ยง และเตรียมข้อมูลส่งต่อให้เจ้าหน้าที่ได้ทันที
           </p>
 
           <div className="motion-fade-up motion-delay-3 mt-7 flex flex-col gap-3 sm:flex-row">
@@ -56,18 +55,22 @@ export function HeroSection({
             </a>
           </div>
 
-          <div className="motion-fade-up motion-delay-3 mt-8 grid grid-cols-3 gap-2 border-y border-white/10 py-3 text-slate-300">
+          <div className="motion-fade-up motion-delay-3 mt-8 grid grid-cols-2 gap-2 border-y border-white/10 py-3 text-slate-300 md:grid-cols-4">
             <div>
-              <p className="text-xs font-bold leading-5 text-white sm:text-sm">หลักฐานภาคสนาม</p>
-              <p className="mt-1 hidden text-sm leading-6 sm:block">รูปถ่าย + พิกัดจากมือถือ</p>
+              <p className="text-xs font-bold leading-5 text-white sm:text-sm">1. แจ้งเหตุ</p>
+              <p className="mt-1 hidden text-sm leading-6 sm:block">รูปถ่าย + หมุดตำแหน่งเหตุ</p>
             </div>
             <div>
-              <p className="text-xs font-bold leading-5 text-white sm:text-sm">ยืนยัน 500m / 60 นาที</p>
-              <p className="mt-1 hidden text-sm leading-6 sm:block">ต้องมีรายงานใกล้เคียงช่วยยืนยัน</p>
+              <p className="text-xs font-bold leading-5 text-white sm:text-sm">2. ดูแผนที่</p>
+              <p className="mt-1 hidden text-sm leading-6 sm:block">รายงานร่วมแบบ realtime</p>
             </div>
             <div>
-              <p className="text-xs font-bold leading-5 text-white sm:text-sm">คุม abuse ฝั่ง server</p>
-              <p className="mt-1 hidden text-sm leading-6 sm:block">rate limit, rules, App Check</p>
+              <p className="text-xs font-bold leading-5 text-white sm:text-sm">3. วิเคราะห์</p>
+              <p className="mt-1 hidden text-sm leading-6 sm:block">alert zones + plume</p>
+            </div>
+            <div>
+              <p className="text-xs font-bold leading-5 text-white sm:text-sm">4. ส่งต่อ</p>
+              <p className="mt-1 hidden text-sm leading-6 sm:block">brief, share, print, โทร 199</p>
             </div>
           </div>
         </div>

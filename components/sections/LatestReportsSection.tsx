@@ -26,7 +26,7 @@ export function LatestReportsSection({
             </h2>
             <p className="mt-5 text-base leading-7 text-smoke-600">
               รายการนี้ใช้ข้อมูลชุดเดียวกับแผนที่ กดเลือกรายงานเพื่อเลื่อนแผนที่ไปตำแหน่งนั้น
-              และยืนยันได้เมื่อมีรายงานของตัวเองอยู่ใกล้ตามเงื่อนไข
+              ยืนยันได้เมื่อมีรายงานของตัวเองอยู่ใกล้ตามเงื่อนไข และรายงานที่เลือกจะไปแสดงใน workspace ถัดไป
             </p>
             {hiddenCount > 0 ? (
               <p className="mt-4 inline-flex rounded-md border border-smoke-200 bg-white px-3 py-2 text-sm font-bold text-smoke-600">

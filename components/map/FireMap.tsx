@@ -330,9 +330,16 @@ export function FireMap({
   }, [alertZones, selectedAlertZoneId]);
 
   return (
-    <div
-      ref={containerRef}
-      className="relative z-0 h-full min-h-[420px] w-full md:min-h-[560px] lg:min-h-full"
-    />
+    <div className="relative z-0 h-full min-h-[420px] w-full md:min-h-[560px] lg:min-h-full">
+      <div ref={containerRef} className="relative z-0 h-full min-h-[420px] w-full md:min-h-[560px] lg:min-h-full" />
+      {visibleReports.length === 0 && alertZones.length === 0 ? (
+        <div className="pointer-events-none absolute bottom-4 left-4 right-4 z-10 max-w-sm rounded-lg border border-white/70 bg-white/95 p-4 text-sm text-smoke-700 shadow-[0_16px_42px_rgb(15_23_42_/_0.18)] backdrop-blur">
+          <p className="font-black text-smoke-950">ยังไม่มีรายงานบนแผนที่</p>
+          <p className="mt-1 leading-6">
+            เริ่มจาก “แจ้งเหตุ” เพื่อเพิ่มตำแหน่งควัน/ไฟ หรือเปิด Firebase backend mode เพื่อดูรายงานร่วมจากอุปกรณ์อื่น
+          </p>
+        </div>
+      ) : null}
+    </div>
   );
 }

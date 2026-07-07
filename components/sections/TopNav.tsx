@@ -6,10 +6,10 @@ interface TopNavProps {
 }
 
 const navItems = [
-  { label: "แผนที่สด", href: "#live-map" },
   { label: "แจ้งเหตุ", href: "#report" },
-  { label: "รายงานล่าสุด", href: "#latest-reports" },
-  { label: "ความปลอดภัย", href: "#security" }
+  { label: "แผนที่สด", href: "#live-map" },
+  { label: "พื้นที่เสี่ยง", href: "#intelligence" },
+  { label: "ส่งต่อ", href: "#handoff" }
 ];
 
 export function TopNav({ runtimeModeLabel, reputationScore }: TopNavProps) {
@@ -35,7 +35,7 @@ export function TopNav({ runtimeModeLabel, reputationScore }: TopNavProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 border-t border-white/10 pt-3 lg:border-0 lg:pt-0">
+        <div className="hidden items-center gap-3 border-t border-white/10 pt-3 md:flex lg:border-0 lg:pt-0">
           <div className="grid w-full grid-cols-4 gap-1 lg:flex lg:w-auto lg:shrink-0 lg:items-center">
             {navItems.map((item) => (
               <a

@@ -34,6 +34,28 @@ const IncidentLocationPicker = dynamic(
 const inputClassName =
   "h-12 w-full rounded-md border border-smoke-200 bg-white px-3 text-sm text-smoke-950 outline-none transition duration-200 placeholder:text-smoke-400 focus:border-ember-600 focus:ring-4 focus:ring-ember-500/10";
 
+function StepHeader({
+  description,
+  step,
+  title
+}: {
+  description: string;
+  step: string;
+  title: string;
+}) {
+  return (
+    <div className="mb-4 grid gap-3 sm:grid-cols-[44px_1fr]">
+      <span className="grid h-10 w-10 place-items-center rounded-md bg-smoke-950 font-mono text-xs font-black text-white">
+        {step}
+      </span>
+      <div>
+        <p className="text-base font-black text-smoke-950">{title}</p>
+        <p className="mt-1 text-sm leading-6 text-smoke-600">{description}</p>
+      </div>
+    </div>
+  );
+}
+
 function formatCoordinate(value: number): string {
   return value.toFixed(6);
 }
@@ -173,15 +195,112 @@ export function ReportForm({ onSubmit }: ReportFormProps) {
   }
 
   return (
-    <form className="space-y-5" onSubmit={handleSubmit}>
-      <fieldset className="rounded-md border border-smoke-200 bg-white p-3 transition-shadow duration-200 focus-within:shadow-[0_0_0_3px_rgb(249_115_22_/_0.08)]">
-        <legend className="px-1 text-xs font-black uppercase tracking-[0.16em] text-smoke-500">
-          Incident type
-        </legend>
+    <form className="space-y-4" onSubmit={handleSubmit}>
+      <fieldset className="rounded-lg border border-smoke-200 bg-white p-4 transition-shadow duration-200 focus-within:shadow-[0_0_0_3px_rgb(249_115_22_/_0.08)]">
+        <legend className="sr-only">เลือกตำแหน่งเหตุ</legend>
+        <StepHeader
+          step="01"
+          title="เลือกตำแหน่งเหตุ"
+          description="GPS ใช้เป็นจุดเริ่มต้นเท่านั้น ให้ลากหมุดไปยังจุดที่เห็นควัน/ไฟก่อนส่งรายงาน"
+        />
+
+        <div className="rounded-lg border border-ember-200 bg-ember-50 p-3 text-sm leading-6 text-ember-900">
+          <p className="font-black">ตำแหน่งรายงานคือหมุดที่คุณเลือก</p>
+          <p className="mt-1">
+            ไม่จำเป็นต้องยืนอยู่ตรงจุดไฟ ให้เลื่อนแผนที่ คลิก หรือ ลากหมุดไปยังจุดต้นควัน/ไฟที่เห็น
+          </p>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto]">
+          <label className="block">
+            <span className="mb-2 block text-sm font-bold text-smoke-950">พื้นที่โดยประมาณ</span>
+            <input
+              className={inputClassName}
+              value={addressLabel}
+              onChange={(event) => setAddressLabel(event.target.value)}
+              placeholder="เช่น ต.สุเทพ หรือใกล้โรงเรียน..."
+            />
+          </label>
+          <button
+            className="group hover-lift inline-flex h-12 items-center justify-center gap-2 rounded-md border border-smoke-300 bg-smoke-950 px-4 text-sm font-bold text-white hover:bg-smoke-800 disabled:cursor-not-allowed disabled:opacity-60 sm:mt-7"
+            type="button"
+            onClick={requestLocation}
+            disabled={isLocating}
+          >
+            <LocateFixed aria-hidden="true" className="transition-transform duration-200 group-hover:scale-105" size={18} />
+            {isLocating ? "กำลังอ่าน GPS" : "ใช้ GPS เริ่มต้น"}
+          </button>
+        </div>
+
+        <div className="mt-4 overflow-hidden rounded-lg border border-smoke-200">
+          <IncidentLocationPicker
+            lat={incidentLocation.lat}
+            lng={incidentLocation.lng}
+            onLocationChange={setIncidentLocation}
+          />
+        </div>
+
+        <div className="mt-3 grid gap-3 rounded-lg border border-smoke-200 bg-smoke-50 p-3 text-sm text-smoke-700 sm:grid-cols-[1fr_auto] sm:items-center">
+          <div>
+            <p className="flex items-center gap-2 font-black text-smoke-950">
+              <MapPinned aria-hidden="true" size={16} />
+              หมุดเหตุ: {formatCoordinate(incidentLocation.lat)}, {formatCoordinate(incidentLocation.lng)}
+            </p>
+            {gpsAccuracyMeters !== null ? (
+              <p className="mt-1 font-semibold text-smoke-600">
+                ความแม่นยำ GPS ประมาณ {gpsAccuracyMeters} เมตร
+              </p>
+            ) : (
+              <p className="mt-1 leading-6">กด GPS เพื่อเริ่มจากตำแหน่งปัจจุบัน หรือปรับหมุดเองได้ทันที</p>
+            )}
+          </div>
+          <button
+            className="hover-lift inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-smoke-300 bg-white px-3 py-2 text-sm font-bold text-smoke-700 hover:border-smoke-500 disabled:cursor-not-allowed disabled:opacity-50"
+            type="button"
+            disabled={!lastGpsLocation}
+            onClick={resetToGpsLocation}
+          >
+            <RotateCcw aria-hidden="true" size={15} />
+            กลับไป GPS
+          </button>
+        </div>
+
+        <details className="mt-3 rounded-md border border-smoke-200 bg-white p-3">
+          <summary className="cursor-pointer text-sm font-black text-smoke-700">
+            แก้พิกัด lat/lng เอง
+          </summary>
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <label className="block">
+              <span className="mb-2 block text-sm font-bold text-smoke-950">Lat</span>
+              <input
+                className={inputClassName}
+                inputMode="decimal"
+                value={lat}
+                onChange={(event) => setLat(event.target.value)}
+              />
+            </label>
+            <label className="block">
+              <span className="mb-2 block text-sm font-bold text-smoke-950">Lng</span>
+              <input
+                className={inputClassName}
+                inputMode="decimal"
+                value={lng}
+                onChange={(event) => setLng(event.target.value)}
+              />
+            </label>
+          </div>
+        </details>
+      </fieldset>
+
+      <fieldset className="rounded-lg border border-smoke-200 bg-white p-4 transition-shadow duration-200 focus-within:shadow-[0_0_0_3px_rgb(249_115_22_/_0.08)]">
+        <legend className="sr-only">ระบุประเภทและความรุนแรง</legend>
+        <StepHeader
+          step="02"
+          title="ระบุประเภทและความรุนแรง"
+          description="เลือกให้ใกล้เคียงที่สุดเพื่อให้แผนที่ รายการ และ alert zones อ่านสถานการณ์ได้เร็ว"
+        />
+
         <label className="block text-sm font-bold text-smoke-950">ประเภทเหตุการณ์</label>
-        <p className="mt-1 text-sm leading-6 text-smoke-600">
-          เลือกประเภทที่ใกล้เคียงที่สุดเพื่อให้แผนที่และรายการอ่านเร็วขึ้น
-        </p>
         <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
           {categoryOptions.map((option) => (
             <button
@@ -198,13 +317,8 @@ export function ReportForm({ onSubmit }: ReportFormProps) {
             </button>
           ))}
         </div>
-      </fieldset>
 
-      <fieldset className="rounded-md border border-smoke-200 bg-white p-3 transition-shadow duration-200 focus-within:shadow-[0_0_0_3px_rgb(249_115_22_/_0.08)]">
-        <legend className="px-1 text-xs font-black uppercase tracking-[0.16em] text-smoke-500">
-          Severity
-        </legend>
-        <label className="block text-sm font-bold text-smoke-950">ความรุนแรง</label>
+        <label className="mt-5 block text-sm font-bold text-smoke-950">ความรุนแรง</label>
         <div className="mt-3 grid grid-cols-3 gap-2">
           {severityOptions.map((option) => (
             <button
@@ -223,99 +337,26 @@ export function ReportForm({ onSubmit }: ReportFormProps) {
         </div>
       </fieldset>
 
-      <fieldset className="rounded-md border border-smoke-200 bg-white p-3 transition-shadow duration-200 focus-within:shadow-[0_0_0_3px_rgb(249_115_22_/_0.08)]">
-        <legend className="px-1 text-xs font-black uppercase tracking-[0.16em] text-smoke-500">
-          Incident location
-        </legend>
-        <div className="mb-4 rounded-md border border-ember-200 bg-ember-50 p-3 text-sm leading-6 text-ember-900">
-          <p className="font-black">ตำแหน่งรายงานคือหมุดที่คุณเลือก</p>
-          <p className="mt-1">
-            ไม่จำเป็นต้องยืนอยู่ตรงจุดไฟ ให้ลากหมุดไปยังจุดที่เห็นควัน/ไฟ
-            และใช้ GPS เป็นจุดเริ่มต้นเท่านั้น
-          </p>
-        </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto]">
-          <label className="block">
-            <span className="mb-2 block text-sm font-bold text-smoke-950">พื้นที่</span>
-            <input
-              className={inputClassName}
-              value={addressLabel}
-              onChange={(event) => setAddressLabel(event.target.value)}
-              placeholder="เช่น ต.สุเทพ หรือใกล้โรงเรียน..."
-            />
-          </label>
-          <button
-            className="group hover-lift inline-flex h-12 items-center justify-center gap-2 rounded-md border border-smoke-300 bg-smoke-950 px-4 text-sm font-bold text-white hover:bg-smoke-800 disabled:cursor-not-allowed disabled:opacity-60 sm:mt-7"
-            type="button"
-            onClick={requestLocation}
-            disabled={isLocating}
-          >
-            <LocateFixed aria-hidden="true" className="transition-transform duration-200 group-hover:scale-105" size={18} />
-            {isLocating ? "กำลังอ่าน" : "ใช้ GPS"}
-          </button>
-        </div>
+      <fieldset className="rounded-lg border border-smoke-200 bg-white p-4 transition-shadow duration-200 focus-within:shadow-[0_0_0_3px_rgb(249_115_22_/_0.08)]">
+        <legend className="sr-only">เพิ่มรายละเอียดและแนบรูป</legend>
+        <StepHeader
+          step="03"
+          title="เพิ่มรายละเอียดและแนบรูป"
+          description="รูปและข้อความสั้น ๆ ช่วยให้คนอื่นตรวจตำแหน่งและยืนยันรายงานได้ดีขึ้น"
+        />
 
-        <div className="mt-4">
-          <IncidentLocationPicker
-            lat={incidentLocation.lat}
-            lng={incidentLocation.lng}
-            onLocationChange={setIncidentLocation}
-          />
-        </div>
-
-        <div className="mt-3 grid gap-3 rounded-md border border-smoke-200 bg-smoke-50 p-3 text-sm text-smoke-700 sm:grid-cols-[1fr_auto] sm:items-center">
-          <div>
-            <p className="flex items-center gap-2 font-black text-smoke-950">
-              <MapPinned aria-hidden="true" size={16} />
-              หมุดเหตุ: {formatCoordinate(incidentLocation.lat)}, {formatCoordinate(incidentLocation.lng)}
-            </p>
-            <p className="mt-1 leading-6">
-              GPS ใช้เป็นจุดเริ่มต้นเท่านั้น ตำแหน่งที่ส่งคือหมุดเหตุบนแผนที่และค่า lat/lng ด้านล่าง
-            </p>
-            {gpsAccuracyMeters !== null ? (
-              <p className="mt-1 font-semibold text-smoke-600">
-                ความแม่นยำ GPS ประมาณ {gpsAccuracyMeters} เมตร
-              </p>
-            ) : null}
-          </div>
-          <button
-            className="hover-lift inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-smoke-300 bg-white px-3 py-2 text-sm font-bold text-smoke-700 hover:border-smoke-500 disabled:cursor-not-allowed disabled:opacity-50"
-            type="button"
-            disabled={!lastGpsLocation}
-            onClick={resetToGpsLocation}
-          >
-            <RotateCcw aria-hidden="true" size={15} />
-            กลับไปตำแหน่ง GPS
-          </button>
-        </div>
-
-        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <label className="block">
-            <span className="mb-2 block text-sm font-bold text-smoke-950">Lat</span>
-            <input
-              className={inputClassName}
-              inputMode="decimal"
-              value={lat}
-              onChange={(event) => setLat(event.target.value)}
-            />
-          </label>
-          <label className="block">
-            <span className="mb-2 block text-sm font-bold text-smoke-950">Lng</span>
-            <input
-              className={inputClassName}
-              inputMode="decimal"
-              value={lng}
-              onChange={(event) => setLng(event.target.value)}
-            />
-          </label>
-        </div>
-      </fieldset>
-
-      <fieldset className="rounded-md border border-smoke-200 bg-white p-3 transition-shadow duration-200 focus-within:shadow-[0_0_0_3px_rgb(249_115_22_/_0.08)]">
-        <legend className="px-1 text-xs font-black uppercase tracking-[0.16em] text-smoke-500">
-          Evidence
-        </legend>
         <label className="block">
+          <span className="mb-2 block text-sm font-bold text-smoke-950">บันทึกสั้น ๆ</span>
+          <textarea
+            className="min-h-28 w-full resize-y rounded-md border border-smoke-200 bg-white px-3 py-3 text-sm text-smoke-950 outline-none transition placeholder:text-smoke-400 focus:border-ember-600 focus:ring-4 focus:ring-ember-500/10"
+            value={notes}
+            onChange={(event) => setNotes(event.target.value)}
+            maxLength={180}
+            placeholder="เช่น เห็นควันจากเชิงดอย ลมพัดเข้าหมู่บ้าน หรือมีเปลวไฟใกล้ถนน"
+          />
+        </label>
+
+        <label className="mt-3 block">
           <span className="mb-2 block text-sm font-bold text-smoke-950">รูปถ่าย</span>
           <span className="group flex min-h-16 items-center gap-3 rounded-md border border-dashed border-smoke-300 bg-smoke-50 px-3 py-3 text-sm text-smoke-700 transition duration-200 hover:-translate-y-0.5 hover:border-ember-500 hover:bg-ember-50">
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-white text-ember-700 shadow-sm transition-transform duration-200 group-hover:scale-105">
@@ -338,17 +379,6 @@ export function ReportForm({ onSubmit }: ReportFormProps) {
             onChange={(event) => setPhotoFile(event.target.files?.[0] ?? null)}
           />
         </label>
-
-        <label className="mt-3 block">
-          <span className="mb-2 block text-sm font-bold text-smoke-950">บันทึกสั้น ๆ</span>
-          <textarea
-            className="min-h-28 w-full resize-y rounded-md border border-smoke-200 bg-white px-3 py-3 text-sm text-smoke-950 outline-none transition placeholder:text-smoke-400 focus:border-ember-600 focus:ring-4 focus:ring-ember-500/10"
-            value={notes}
-            onChange={(event) => setNotes(event.target.value)}
-            maxLength={180}
-            placeholder="เช่น เห็นควันจากเชิงดอย ลมพัดเข้าหมู่บ้าน หรือมีเปลวไฟใกล้ถนน"
-          />
-        </label>
       </fieldset>
 
       {formError ? (
@@ -357,14 +387,21 @@ export function ReportForm({ onSubmit }: ReportFormProps) {
         </p>
       ) : null}
 
-      <button
-        className="group hover-lift inline-flex h-12 w-full items-center justify-center gap-2 rounded-md bg-ember-600 px-4 text-sm font-black text-white shadow-[0_14px_30px_rgb(234_88_12_/_0.22)] hover:bg-ember-700 hover:shadow-[0_18px_38px_rgb(234_88_12_/_0.28)] disabled:cursor-not-allowed disabled:opacity-60"
-        type="submit"
-        disabled={isSubmitting}
-      >
-        <Send aria-hidden="true" className="transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" size={18} />
-        {isSubmitting ? "กำลังส่งรายงาน" : "ส่งรายงานเข้าสู่ระบบ"}
-      </button>
+      <div className="rounded-lg border border-ember-200 bg-ember-50 p-4">
+        <StepHeader
+          step="04"
+          title="ส่งรายงาน"
+          description="ระบบจะใช้ตำแหน่งหมุดเหตุล่าสุดและตรวจ payload อีกครั้งใน backend mode"
+        />
+        <button
+          className="group hover-lift inline-flex h-12 w-full items-center justify-center gap-2 rounded-md bg-ember-600 px-4 text-sm font-black text-white shadow-[0_14px_30px_rgb(234_88_12_/_0.22)] hover:bg-ember-700 hover:shadow-[0_18px_38px_rgb(234_88_12_/_0.28)] disabled:cursor-not-allowed disabled:opacity-60"
+          type="submit"
+          disabled={isSubmitting}
+        >
+          <Send aria-hidden="true" className="transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" size={18} />
+          {isSubmitting ? "กำลังส่งรายงาน" : "ส่งรายงานเข้าสู่ระบบ"}
+        </button>
+      </div>
     </form>
   );
 }

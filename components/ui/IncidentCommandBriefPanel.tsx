@@ -18,6 +18,7 @@ import {
 
 interface IncidentCommandBriefPanelProps {
   brief: IncidentBrief;
+  embedded?: boolean;
 }
 
 async function writeClipboard(text: string): Promise<boolean> {
@@ -33,7 +34,10 @@ async function writeClipboard(text: string): Promise<boolean> {
   }
 }
 
-export function IncidentCommandBriefPanel({ brief }: IncidentCommandBriefPanelProps) {
+export function IncidentCommandBriefPanel({
+  brief,
+  embedded = false
+}: IncidentCommandBriefPanelProps) {
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const canShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
 
@@ -105,9 +109,13 @@ export function IncidentCommandBriefPanel({ brief }: IncidentCommandBriefPanelPr
   return (
     <section
       aria-labelledby="incident-command-brief-title"
-      className="incident-brief-section bg-[#07111f] px-4 py-12 text-white md:py-14"
+      className={
+        embedded
+          ? "text-white"
+          : "incident-brief-section bg-[#07111f] px-4 py-12 text-white md:py-14"
+      }
     >
-      <div className="mx-auto max-w-[1440px]">
+      <div className={embedded ? "" : "mx-auto max-w-[1440px]"}>
         <div className="incident-brief-print overflow-hidden rounded-lg border border-white/10 bg-[#0b1728] shadow-[0_24px_80px_rgb(0_0_0_/_0.24)]">
           <div className="border-b border-white/10 p-4 md:p-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">

@@ -100,11 +100,11 @@ export function IncidentDetailPanel({
   const handoffSummary = buildAlertZoneHandoffSummary(zone);
 
   return (
-    <section
+    <div
       aria-labelledby="incident-detail-title"
-      className="bg-[#07111f] px-4 pb-16 text-white md:pb-20"
+      className="text-white"
     >
-      <div className="mx-auto max-w-[1440px] rounded-lg border border-white/10 bg-[#0b1728] shadow-[0_24px_80px_rgb(0_0_0_/_0.22)]">
+      <div className="rounded-lg border border-white/10 bg-[#0b1728] shadow-[0_24px_80px_rgb(0_0_0_/_0.22)]">
         <div className="flex flex-col gap-4 border-b border-white/10 p-4 md:flex-row md:items-start md:justify-between md:p-5">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.22em] text-ember-100">
@@ -236,6 +236,6 @@ export function IncidentDetailPanel({
           )}
         </div>
       </div>
-    </section>
+    </div>
   );
 }

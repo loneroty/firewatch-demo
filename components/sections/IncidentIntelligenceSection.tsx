@@ -40,7 +40,7 @@ export function IncidentIntelligenceSection({
   }
 
   return (
-    <section className="bg-[#07111f] px-4 pb-16 text-white md:pb-20">
+    <section id="intelligence" className="scroll-mt-28 bg-[#07111f] px-4 py-14 text-white md:py-20">
       <div className="mx-auto max-w-[1440px]">
         <div className="grid gap-6 lg:grid-cols-[minmax(300px,420px)_minmax(0,1fr)]">
           <Reveal>
@@ -51,8 +51,8 @@ export function IncidentIntelligenceSection({
               พื้นที่ที่ควรตรวจสอบก่อน
             </h2>
             <p className="mt-5 text-base leading-7 text-slate-300">
-              ระบบนี้ไม่ได้สร้างข้อมูลใหม่ใน backend แต่สรุปจากรายงานที่มีอยู่แล้ว:
-              จุดใกล้กันในระยะ 500 เมตร ความรุนแรง สถานะยืนยัน และความสดของรายงาน
+              เลือกพื้นที่เสี่ยงจากรายการนี้เพื่อเปิดรายละเอียดภาคสนาม:
+              หลักฐาน timeline, แบบจำลองแนวควัน และ command brief สำหรับส่งต่อ
             </p>
             <div className="mt-6 grid grid-cols-2 gap-3 border-y border-white/10 py-4 text-sm">
               <div>

@@ -6,19 +6,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ReportForm } from "@/components/ReportForm";
 import { ReportList } from "@/components/ReportList";
 import { DemoModeSection } from "@/components/sections/DemoModeSection";
-import { EmergencyHandoffPanel } from "@/components/ui/EmergencyHandoffPanel";
 import { HeroSection } from "@/components/sections/HeroSection";
 import { HowItWorksSection } from "@/components/sections/HowItWorksSection";
-import { IncidentDetailPanel } from "@/components/sections/IncidentDetailPanel";
 import { IncidentIntelligenceSection } from "@/components/sections/IncidentIntelligenceSection";
 import { LatestReportsSection } from "@/components/sections/LatestReportsSection";
 import { LiveMapSection } from "@/components/sections/LiveMapSection";
+import { MobileQuickActionBar } from "@/components/sections/MobileQuickActionBar";
 import { ReportFormSection } from "@/components/sections/ReportFormSection";
+import { SelectedIncidentWorkspaceSection } from "@/components/sections/SelectedIncidentWorkspaceSection";
 import { SituationSummary } from "@/components/sections/SituationSummary";
-import { SmokeSimulationPanel } from "@/components/sections/SmokeSimulationPanel";
 import { TopNav } from "@/components/sections/TopNav";
 import { TrustSecuritySection } from "@/components/sections/TrustSecuritySection";
-import { IncidentCommandBriefPanel } from "@/components/ui/IncidentCommandBriefPanel";
 import {
   confirmReportInBackend,
   createReportInBackend,
@@ -496,11 +494,12 @@ export function FireWatchApp() {
   );
 
   return (
-    <main className="min-h-screen bg-[#f8f5ee] text-smoke-950">
+    <main className="min-h-screen bg-[#f8f5ee] pb-20 text-smoke-950 md:pb-0">
       <TopNav
         runtimeModeLabel={getRuntimeModeLabel()}
         reputationScore={reputationScore}
       />
+      <MobileQuickActionBar />
       <HeroSection
         totalReports={reports.length}
         confirmedCount={confirmedCount}
@@ -513,29 +512,6 @@ export function FireWatchApp() {
         confirmedCount={confirmedCount}
         recentReportsCount={recentReportsCount}
       />
-      <IncidentIntelligenceSection
-        zones={alertZones}
-        selectedAlertZoneId={activeSelectedAlertZoneId}
-        onSelectAlertZone={handleSelectAlertZone}
-      />
-
-      <SmokeSimulationPanel
-        plume={smokePlume}
-        selectedZone={selectedAlertZone}
-        settings={smokePlumeOptions}
-        onEnabledChange={setIsSmokePlumeEnabled}
-        onWindDirectionChange={setWindDirectionDegrees}
-        onWindSpeedLevelChange={setWindSpeedLevel}
-      />
-
-      {selectedIncidentDetail ? (
-        <IncidentDetailPanel
-          detail={selectedIncidentDetail}
-          onClearAlertZone={handleClearAlertZone}
-        />
-      ) : null}
-
-      {incidentBrief ? <IncidentCommandBriefPanel brief={incidentBrief} /> : null}
 
       {systemMessage ? (
         <div
@@ -564,12 +540,13 @@ export function FireWatchApp() {
         <ReportForm onSubmit={handleCreateReport} />
       </ReportFormSection>
 
+      <IncidentIntelligenceSection
+        zones={alertZones}
+        selectedAlertZoneId={activeSelectedAlertZoneId}
+        onSelectAlertZone={handleSelectAlertZone}
+      />
+
       <LatestReportsSection hiddenCount={hiddenCount} filters={filterControls}>
-        {selectedReportHandoffSummary ? (
-          <div className="border-b border-smoke-200 bg-[#fffaf3] p-4">
-            <EmergencyHandoffPanel summary={selectedReportHandoffSummary} />
-          </div>
-        ) : null}
         <ReportList
           reports={visibleReports}
           selectedReportId={selectedReportId}
@@ -578,6 +555,19 @@ export function FireWatchApp() {
           onConfirmReport={handleConfirmReport}
         />
       </LatestReportsSection>
+
+      <SelectedIncidentWorkspaceSection
+        brief={incidentBrief}
+        detail={selectedIncidentDetail}
+        plume={smokePlume}
+        reportHandoffSummary={selectedReportHandoffSummary}
+        selectedZone={selectedAlertZone}
+        settings={smokePlumeOptions}
+        onClearAlertZone={handleClearAlertZone}
+        onEnabledChange={setIsSmokePlumeEnabled}
+        onWindDirectionChange={setWindDirectionDegrees}
+        onWindSpeedLevelChange={setWindSpeedLevel}
+      />
 
       <HowItWorksSection />
       <TrustSecuritySection />

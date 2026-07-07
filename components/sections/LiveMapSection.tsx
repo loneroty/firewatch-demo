@@ -14,15 +14,14 @@ export function LiveMapSection({ children }: LiveMapSectionProps) {
         <Reveal className="mb-7 grid gap-5 lg:grid-cols-[minmax(0,0.85fr)_minmax(320px,0.35fr)] lg:items-end">
           <div>
             <p className="mb-3 text-xs font-black uppercase tracking-[0.22em] text-ember-700">
-              Live map
+              Operations workspace
             </p>
             <h2 className="max-w-3xl text-3xl font-black tracking-tight text-smoke-950 md:text-5xl">
-              แผนที่คือโต๊ะปฏิบัติการของ FireWatch
+              ดูสถานการณ์บนแผนที่ก่อนตัดสินใจขั้นต่อไป
             </h2>
           </div>
           <p className="text-base leading-7 text-smoke-600">
-            จุดรายงานใช้ข้อมูลชุดเดียวกับรายการล่าสุด เลือกหมุดเพื่อดูตำแหน่ง
-            และแยกสถานะด้วยรูปทรง/สีเพื่ออ่านได้เร็วบนจอใหญ่และมือถือ
+            จุดรายงาน alert zone และ plume overlay ใช้ข้อมูลจากรายงานชุดเดียวกัน เลือกหมุดหรือวงพื้นที่เพื่อเปิด workspace ภาคสนามด้านล่าง
           </p>
         </Reveal>
 
@@ -33,7 +32,7 @@ export function LiveMapSection({ children }: LiveMapSectionProps) {
                 <MapPinned aria-hidden="true" size={15} />
                 Realtime watch board
               </span>
-              <span className="text-slate-500">OpenStreetMap / clustered reports</span>
+              <span className="text-slate-500">Markers / zones / plume overlay</span>
             </div>
             <div className="relative z-0 isolate h-[480px] overflow-hidden rounded-md border border-white/10 bg-smoke-100 transition-shadow duration-300 hover:shadow-[0_0_0_1px_rgb(249_115_22_/_0.22)] md:h-[600px] lg:h-[700px]">
               {children}
@@ -50,13 +49,19 @@ export function LiveMapSection({ children }: LiveMapSectionProps) {
               </div>
             </Reveal>
             <Reveal delayMs={190} className="rounded-lg border border-smoke-200 bg-white p-5 shadow-sm">
-              <p className="text-lg font-black text-smoke-950">อ่านแผนที่แบบทีมภาคสนาม</p>
-              <div className="mt-4 space-y-4 text-sm leading-6 text-smoke-600">
+              <p className="text-lg font-black text-smoke-950">อ่านแผนที่ให้เร็ว</p>
+              <div className="mt-4 space-y-3 text-sm leading-6 text-smoke-600">
                 <p>
-                  หมุดสีส้มคือจุดที่ต้องการรายงานใกล้เคียงเพิ่ม ส่วนหมุดสีเขียวคือจุดที่มีหลักฐานอีกตำแหน่งช่วยยืนยันแล้ว
+                  <span className="font-black text-smoke-950">หมุด</span> คือรายงานเดี่ยว เลือกเพื่อดูรายงานและเตรียม handoff
                 </p>
                 <p>
-                  ใน backend mode ข้อมูลนี้แชร์ข้ามอุปกรณ์ผ่าน Firestore realtime โดย client ไม่ได้เขียนสถานะยืนยันเอง
+                  <span className="font-black text-smoke-950">วงพื้นที่</span> คือ alert zone จากรายงานใกล้กันในระยะ 500 เมตร
+                </p>
+                <p>
+                  <span className="font-black text-smoke-950">แนว plume</span> คือแบบจำลองช่วยประเมินเบื้องต้นเมื่อเลือกพื้นที่เสี่ยง
+                </p>
+                <p className="rounded-md border border-smoke-200 bg-smoke-50 p-3 text-xs leading-5">
+                  backend mode แชร์ข้อมูลข้ามอุปกรณ์ผ่าน Firestore realtime โดย client ไม่เขียนสถานะยืนยันเอง
                 </p>
               </div>
             </Reveal>
