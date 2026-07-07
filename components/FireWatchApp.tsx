@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { AlertTriangle } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ReportForm } from "@/components/ReportForm";
 import { ReportList } from "@/components/ReportList";
 import { DemoModeSection } from "@/components/sections/DemoModeSection";
@@ -18,6 +18,7 @@ import { SituationSummary } from "@/components/sections/SituationSummary";
 import { SmokeSimulationPanel } from "@/components/sections/SmokeSimulationPanel";
 import { TopNav } from "@/components/sections/TopNav";
 import { TrustSecuritySection } from "@/components/sections/TrustSecuritySection";
+import { IncidentCommandBriefPanel } from "@/components/ui/IncidentCommandBriefPanel";
 import {
   confirmReportInBackend,
   createReportInBackend,
@@ -29,6 +30,11 @@ import {
   isFirebaseBackendConfigured
 } from "@/lib/firebase/config";
 import { buildReportHandoffSummary } from "@/lib/emergencyHandoff";
+import {
+  buildBriefShareUrl,
+  buildBriefTarget,
+  buildIncidentBrief
+} from "@/lib/incidentBrief";
 import { buildIncidentDetail } from "@/lib/incidentDetail";
 import { buildAlertZones } from "@/lib/incidentIntelligence";
 import {
@@ -116,6 +122,8 @@ export function FireWatchApp() {
   const [isSmokePlumeEnabled, setIsSmokePlumeEnabled] = useState(true);
   const [windDirectionDegrees, setWindDirectionDegrees] = useState(45);
   const [windSpeedLevel, setWindSpeedLevel] = useState<WindSpeedLevel>("ปานกลาง");
+  const [briefBaseUrl, setBriefBaseUrl] = useState("https://firewatch.local/");
+  const hasAppliedDeepLinkRef = useRef(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -179,6 +187,22 @@ export function FireWatchApp() {
 
     return () => {
       window.clearInterval(intervalId);
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    queueMicrotask(() => {
+      if (!isMounted) {
+        return;
+      }
+
+      setBriefBaseUrl(`${window.location.origin}${window.location.pathname}`);
+    });
+
+    return () => {
+      isMounted = false;
     };
   }, []);
 
@@ -249,6 +273,59 @@ export function FireWatchApp() {
     () => buildSmokePlume(selectedAlertZone, smokePlumeOptions),
     [selectedAlertZone, smokePlumeOptions]
   );
+  const incidentBriefTarget = useMemo(
+    () =>
+      buildBriefTarget({
+        selectedIncidentDetail,
+        selectedReport
+      }),
+    [selectedIncidentDetail, selectedReport]
+  );
+  const incidentBriefShareUrl = useMemo(
+    () => buildBriefShareUrl(incidentBriefTarget, briefBaseUrl),
+    [briefBaseUrl, incidentBriefTarget]
+  );
+  const incidentBrief = useMemo(
+    () =>
+      buildIncidentBrief(incidentBriefTarget, {
+        generatedAt: currentTimeMs > 0 ? new Date(currentTimeMs) : new Date(),
+        shareUrl: incidentBriefShareUrl,
+        smokePlume
+      }),
+    [currentTimeMs, incidentBriefShareUrl, incidentBriefTarget, smokePlume]
+  );
+
+  useEffect(() => {
+    if (hasAppliedDeepLinkRef.current) {
+      return;
+    }
+
+    queueMicrotask(() => {
+      if (hasAppliedDeepLinkRef.current) {
+        return;
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const zoneParam = params.get("zone");
+      const reportParam = params.get("report");
+
+      if (!zoneParam && !reportParam) {
+        hasAppliedDeepLinkRef.current = true;
+        return;
+      }
+
+      if (zoneParam && alertZones.some((zone) => zone.id === zoneParam)) {
+        setSelectedAlertZoneId(zoneParam);
+        hasAppliedDeepLinkRef.current = true;
+        return;
+      }
+
+      if (reportParam && reports.some((report) => report.id === reportParam)) {
+        setSelectedReportId(reportParam);
+        hasAppliedDeepLinkRef.current = true;
+      }
+    });
+  }, [alertZones, reports]);
 
   const handleCreateReport = useCallback(
     async (draft: ReportDraft) => {
@@ -457,6 +534,8 @@ export function FireWatchApp() {
           onClearAlertZone={handleClearAlertZone}
         />
       ) : null}
+
+      {incidentBrief ? <IncidentCommandBriefPanel brief={incidentBrief} /> : null}
 
       {systemMessage ? (
         <div

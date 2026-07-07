@@ -235,3 +235,52 @@ textarea {
     transform: none;
   }
 }
+
+@media print {
+  html.print-incident-brief-only,
+  html.print-incident-brief-only body {
+    background: #ffffff !important;
+    color: #111827 !important;
+  }
+
+  html.print-incident-brief-only body main > :not(.incident-brief-section) {
+    display: none !important;
+  }
+
+  html.print-incident-brief-only .incident-brief-section {
+    background: #ffffff !important;
+    color: #111827 !important;
+    display: block !important;
+    padding: 0 !important;
+  }
+
+  html.print-incident-brief-only .incident-brief-print {
+    background: #ffffff !important;
+    border: 1px solid #111827 !important;
+    box-shadow: none !important;
+    color: #111827 !important;
+  }
+
+  html.print-incident-brief-only .incident-brief-print *,
+  html.print-incident-brief-only .incident-brief-print pre {
+    background: transparent !important;
+    box-shadow: none !important;
+    color: #111827 !important;
+    text-shadow: none !important;
+  }
+
+  html.print-incident-brief-only .incident-brief-print pre {
+    border: 1px solid #d1d5db !important;
+    max-height: none !important;
+    overflow: visible !important;
+    page-break-inside: avoid;
+    white-space: pre-wrap !important;
+  }
+
+  html.print-incident-brief-only [data-print-hidden="true"],
+  html.print-incident-brief-only .print-hidden,
+  html.print-incident-brief-only button,
+  html.print-incident-brief-only .leaflet-container {
+    display: none !important;
+  }
+}
