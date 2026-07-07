@@ -119,7 +119,7 @@ export function IncidentCommandBriefPanel({
         <div className="incident-brief-print overflow-hidden rounded-lg border border-white/10 bg-[#0b1728] shadow-[0_24px_80px_rgb(0_0_0_/_0.24)]">
           <div className="border-b border-white/10 p-4 md:p-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div className="max-w-4xl">
+              <div className="min-w-0 max-w-4xl">
                 <p className="text-xs font-black uppercase tracking-[0.22em] text-ember-100">
                   Incident Command Brief
                 </p>
@@ -136,7 +136,7 @@ export function IncidentCommandBriefPanel({
               </div>
 
               <div
-                className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap lg:justify-end"
+                className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 xl:w-auto xl:flex xl:flex-wrap xl:justify-end"
                 data-print-hidden="true"
               >
                 <button
@@ -189,53 +189,59 @@ export function IncidentCommandBriefPanel({
             ) : null}
           </div>
 
-          <div className="grid gap-5 p-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(320px,0.45fr)] lg:p-5">
-            <div className="space-y-4">
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
+          <div className="grid min-w-0 gap-5 p-4 2xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.42fr)] lg:p-5">
+            <div className="min-w-0 space-y-5">
+              <div className="grid min-w-0 gap-3 md:grid-cols-2">
+                <div className="min-w-0 rounded-lg border border-white/10 bg-white/[0.04] p-4">
                   <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
                     Target
                   </p>
-                  <p className="mt-2 text-sm font-black text-white">{brief.targetLabel}</p>
+                  <p className="mt-2 break-words text-base font-black leading-6 text-white">
+                    {brief.targetLabel}
+                  </p>
                   <p className="mt-1 text-xs text-slate-400">
                     {brief.targetKind === "zone" ? "Alert zone" : "Selected report"}
                   </p>
                 </div>
-                <div className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
+                <div className="min-w-0 rounded-lg border border-white/10 bg-white/[0.04] p-4">
                   <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
                     {brief.statusLabel}
                   </p>
-                  <p className="mt-2 text-sm font-black text-ember-100">{brief.statusValue}</p>
+                  <p className="mt-2 break-words text-base font-black leading-6 text-ember-100">
+                    {brief.statusValue}
+                  </p>
                 </div>
-                <div className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
+                <div className="min-w-0 rounded-lg border border-white/10 bg-white/[0.04] p-4">
                   <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
                     Coordinates
                   </p>
-                  <p className="mt-2 break-words text-sm font-black text-white">
+                  <p className="mt-2 whitespace-normal break-words font-mono text-sm font-black leading-6 text-white">
                     {brief.coordinateLabel}
                   </p>
                 </div>
-                <div className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
+                <div className="min-w-0 rounded-lg border border-white/10 bg-white/[0.04] p-4">
                   <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
                     Generated
                   </p>
-                  <p className="mt-2 text-sm font-black text-white">{brief.generatedAtLabel}</p>
+                  <p className="mt-2 break-words text-base font-black leading-6 text-white">
+                    {brief.generatedAtLabel}
+                  </p>
                 </div>
               </div>
 
-              <div className="rounded-lg border border-white/10 bg-[#07111f] p-4">
+              <div className="min-w-0 rounded-lg border border-white/10 bg-[#07111f] p-4">
                 <div className="mb-3 flex items-center gap-2 text-sm font-black text-ember-100">
                   <FileText aria-hidden="true" size={17} />
                   Brief sheet
                 </div>
-                <pre className="max-h-[520px] overflow-auto whitespace-pre-wrap break-words rounded-md border border-white/10 bg-white/[0.04] p-4 text-sm leading-6 text-slate-200">
+                <pre className="max-h-[520px] min-w-0 overflow-auto whitespace-pre-wrap break-words rounded-md border border-white/10 bg-white/[0.04] p-4 text-sm leading-6 text-slate-200">
                   {brief.body}
                 </pre>
               </div>
             </div>
 
-            <aside className="space-y-4">
-              <div className="rounded-lg border border-ember-200/20 bg-ember-200/10 p-4">
+            <aside className="min-w-0 space-y-4">
+              <div className="min-w-0 rounded-lg border border-ember-200/20 bg-ember-200/10 p-4">
                 <div className="flex items-center gap-2 text-sm font-black text-ember-50">
                   <QrCode aria-hidden="true" size={17} />
                   QR-ready handoff link
@@ -248,11 +254,19 @@ export function IncidentCommandBriefPanel({
                   <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
                     Deep link
                   </p>
-                  <p className="mt-2 break-all text-xs leading-5 text-slate-300">
+                  <p className="mt-2 whitespace-normal break-words text-xs leading-5 text-slate-300">
                     {brief.shareUrl}
                   </p>
                 </div>
-                <div className="mt-3 grid grid-cols-2 gap-2" data-print-hidden="true">
+                <div className="mt-3 rounded-md border border-white/10 bg-[#07111f] p-3">
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                    Google Maps
+                  </p>
+                  <p className="mt-2 whitespace-normal break-words text-xs leading-5 text-slate-300">
+                    {brief.mapsUrl}
+                  </p>
+                </div>
+                <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2" data-print-hidden="true">
                   <button
                     className="hover-lift inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-white/10 bg-white/[0.06] px-3 py-2 text-sm font-black text-white hover:bg-white/[0.1]"
                     type="button"

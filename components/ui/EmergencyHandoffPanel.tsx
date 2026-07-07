@@ -89,7 +89,7 @@ export function EmergencyHandoffPanel({
         </div>
       </div>
 
-      <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 2xl:grid-cols-4">
         <a
           className="hover-lift inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-red-600 px-3 py-2 text-sm font-black text-white hover:bg-red-700"
           href="tel:199"

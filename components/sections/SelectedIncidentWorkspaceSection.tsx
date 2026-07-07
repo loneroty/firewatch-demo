@@ -100,8 +100,11 @@ export function SelectedIncidentWorkspaceSection({
             tone="dark"
           />
         ) : (
-          <div className="grid gap-5 xl:grid-cols-[minmax(0,0.98fr)_minmax(360px,0.56fr)]">
-            <div className="space-y-5" data-print-hidden="true">
+          <div className="space-y-5">
+            <div
+              className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.78fr)]"
+              data-print-hidden="true"
+            >
               {detail ? (
                 <IncidentDetailPanel
                   detail={detail}
@@ -135,7 +138,7 @@ export function SelectedIncidentWorkspaceSection({
               )}
             </div>
 
-            <div className="incident-brief-host">
+            <div className="incident-brief-host min-w-0">
               {brief ? (
                 <IncidentCommandBriefPanel brief={brief} embedded />
               ) : (
