@@ -7,6 +7,7 @@ import {
 } from "firebase-functions/v2/https";
 import { confirmReportForRequest } from "./confirmReport";
 import { createReportForRequest } from "./createReport";
+import { flagReportForRequest } from "./flagReport";
 import { ReportFunctionError } from "./reportValidation";
 
 initializeApp();
@@ -17,6 +18,30 @@ function toHttpsError(error: unknown): HttpsError {
   }
 
   return new HttpsError("internal", "Request failed.");
+}
+
+function getErrorLogContext(error: unknown): Record<string, string> {
+  if (error instanceof ReportFunctionError) {
+    return {
+      code: error.code,
+      message: error.message,
+      name: error.name,
+      stack: error.stack ?? ""
+    };
+  }
+
+  if (error instanceof Error) {
+    return {
+      message: error.message,
+      name: error.name,
+      stack: error.stack ?? ""
+    };
+  }
+
+  return {
+    message: String(error),
+    name: typeof error
+  };
 }
 
 export const createReport = onCall(
@@ -58,6 +83,29 @@ export const confirmReport = onCall(
         }
       );
     } catch (error) {
+      throw toHttpsError(error);
+    }
+  }
+);
+
+export const flagReport = onCall(
+  {
+    region: "asia-southeast1",
+    enforceAppCheck: true
+  },
+  async (request) => {
+    try {
+      return await flagReportForRequest(
+        {
+          authUid: request.auth?.uid ?? null,
+          payload: request.data
+        },
+        {
+          db: getFirestore()
+        }
+      );
+    } catch (error) {
+      console.error("flagReport callable failed", getErrorLogContext(error));
       throw toHttpsError(error);
     }
   }

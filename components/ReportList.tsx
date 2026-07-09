@@ -5,10 +5,12 @@ import { getCategoryLabel, getSeverityLabel } from "@/lib/reportLabels";
 import type { Report } from "@/lib/types";
 
 interface ReportListProps {
+  flaggedReportIds?: readonly string[];
+  flaggingReportIds?: readonly string[];
   reports: readonly Report[];
   selectedReportId: string | null;
   onSelectReport: (reportId: string) => void;
-  onFlagReport: (reportId: string) => void;
+  onFlagReport: (reportId: string) => void | Promise<void>;
   onConfirmReport: (reportId: string) => void | Promise<void>;
 }
 
@@ -46,6 +48,8 @@ function getStatusRailClassName(report: Report): string {
 }
 
 export function ReportList({
+  flaggedReportIds = [],
+  flaggingReportIds = [],
   reports,
   selectedReportId,
   onSelectReport,
@@ -70,7 +74,11 @@ export function ReportList({
   return (
     <div className="min-h-0 bg-white">
       <div className="divide-y divide-smoke-200">
-        {reports.map((report, index) => (
+        {reports.map((report, index) => {
+          const isFlagging = flaggingReportIds.includes(report.id);
+          const hasFlagged = flaggedReportIds.includes(report.id);
+
+          return (
           <article
             key={report.id}
             className={`motion-fade-up group relative transition duration-200 ${
@@ -156,18 +164,27 @@ export function ReportList({
                     ยืนยันจุดนี้
                   </button>
                   <button
-                    className="hover-lift inline-flex min-h-10 items-center gap-1.5 rounded-md border border-smoke-200 bg-white px-3 py-2 text-xs font-bold text-smoke-700 hover:border-smoke-400 hover:bg-smoke-50"
+                    className="hover-lift inline-flex min-h-10 items-center gap-1.5 rounded-md border border-smoke-200 bg-white px-3 py-2 text-xs font-bold text-smoke-700 hover:border-smoke-400 hover:bg-smoke-50 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
                     type="button"
-                    onClick={() => onFlagReport(report.id)}
+                    disabled={isFlagging || hasFlagged}
+                    onClick={() => {
+                      void onFlagReport(report.id);
+                    }}
                   >
                     <Flag aria-hidden="true" size={14} />
-                    ไม่เหมาะสม {report.flaggedCount > 0 ? report.flaggedCount : ""}
+                    {isFlagging
+                      ? "กำลังส่งตรวจสอบ"
+                      : hasFlagged
+                        ? "เคยรายงานแล้ว"
+                        : "รายงานข้อมูลไม่ถูกต้อง"}{" "}
+                    {report.flaggedCount > 0 ? report.flaggedCount : ""}
                   </button>
                 </div>
               </div>
             </div>
           </article>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

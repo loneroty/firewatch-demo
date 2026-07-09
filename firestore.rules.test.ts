@@ -183,6 +183,25 @@ describe("firestore security rules", () => {
         moderationStatus: "ถูกซ่อน"
       })
     );
+
+    await assertFails(
+      updateDoc(doc(userDb, "reports", "report-owned"), {
+        flaggedCount: 1
+      })
+    );
+  });
+
+  it("blocks direct client writes to report flag subcollections", async () => {
+    await seedReport("report-owned", "user-a");
+    const userDb = authedContext("user-a").firestore();
+
+    await assertFails(
+      setDoc(doc(userDb, "reports", "report-owned", "flags", "user-a"), {
+        uid: "user-a",
+        reportId: "report-owned",
+        createdAt: CREATED_AT
+      })
+    );
   });
 
   it("prevents a user from reading or writing another user's profile", async () => {

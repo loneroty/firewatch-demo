@@ -16,8 +16,10 @@ import {
   createBackendDisplayReport,
   mapConfirmReportError,
   mapCreateReportError,
+  mapFlagReportError,
   readConfirmReportCallableResponse,
-  readCreateReportCallableResponse
+  readCreateReportCallableResponse,
+  readFlagReportCallableResponse
 } from "@/lib/firebase/reportPayload";
 
 function createReportImageId(): string {
@@ -125,5 +127,26 @@ export async function confirmReportInBackend(
     readConfirmReportCallableResponse(result.data);
   } catch (error) {
     throw new Error(mapConfirmReportError(error));
+  }
+}
+
+export async function flagReportInBackend(reportId: string): Promise<void> {
+  const services = getFirebaseServices();
+  if (!services) {
+    throw new Error("Firebase backend ยังตั้งค่าไม่ครบ: เพิ่ม NEXT_PUBLIC_FIREBASE_* หรือใช้ Local demo mode");
+  }
+
+  try {
+    await ensureAppCheckToken();
+    const uid = await ensureAnonymousSession();
+    if (!uid) {
+      throw new Error("เข้าสู่ระบบแบบ anonymous ไม่สำเร็จ: Firebase Auth ไม่คืนค่า user id");
+    }
+
+    const flagReport = httpsCallable(services.functions, "flagReport");
+    const result = await flagReport({ reportId });
+    readFlagReportCallableResponse(result.data);
+  } catch (error) {
+    throw new Error(mapFlagReportError(error));
   }
 }

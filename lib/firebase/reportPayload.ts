@@ -30,6 +30,12 @@ export interface ConfirmReportCallableResponse {
   verificationStatus: "ยืนยันแล้ว";
 }
 
+export interface FlagReportCallableResponse {
+  reportId: string;
+  flaggedCount: number;
+  moderationStatus: Report["moderationStatus"];
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -156,6 +162,29 @@ export function readConfirmReportCallableResponse(
   };
 }
 
+export function readFlagReportCallableResponse(
+  data: unknown
+): FlagReportCallableResponse {
+  if (
+    !isRecord(data) ||
+    typeof data.reportId !== "string" ||
+    typeof data.flaggedCount !== "number" ||
+    (
+      data.moderationStatus !== "ปกติ" &&
+      data.moderationStatus !== "รอตรวจสอบ" &&
+      data.moderationStatus !== "ถูกซ่อน"
+    )
+  ) {
+    throw new Error("callable flagReport ไม่ได้คืนค่าผลการส่งเข้าคิวตรวจสอบที่ถูกต้อง");
+  }
+
+  return {
+    reportId: data.reportId,
+    flaggedCount: data.flaggedCount,
+    moderationStatus: data.moderationStatus
+  };
+}
+
 export function createBackendDisplayReport(
   draft: ReportDraft,
   reportId: string,
@@ -276,4 +305,47 @@ export function mapConfirmReportError(error: unknown): string {
   }
 
   return message || "ยืนยันรายงานไม่สำเร็จ กรุณาลองใหม่";
+}
+
+export function mapFlagReportError(error: unknown): string {
+  const code = readErrorCode(error);
+  const message = readErrorMessage(error);
+
+  if (
+    message?.includes("App Check") ||
+    message?.includes("ยังตั้งค่า") ||
+    message?.includes("ตั้งค่าไม่ครบ")
+  ) {
+    return message;
+  }
+
+  if (isFirebaseAuthErrorCode(code)) {
+    return "เข้าสู่ระบบแบบ anonymous ไม่สำเร็จ: ตรวจว่าเปิด Anonymous Auth ใน Firebase แล้วลองใหม่";
+  }
+
+  if (code === "internal" || message === "internal" || message === "Request failed.") {
+    return "ยังไม่สามารถส่งเข้าคิวตรวจสอบได้ กรุณาลองใหม่อีกครั้ง";
+  }
+
+  if (code === "unauthenticated") {
+    return "ยังไม่ได้เข้าสู่ระบบ จึงรายงานข้อมูลไม่ถูกต้องผ่าน Firebase backend ไม่ได้";
+  }
+
+  if (code === "already-exists" || message === "duplicate-report-flag") {
+    return "คุณเคยรายงานข้อมูลนี้แล้ว ระบบรับไว้ในคิวตรวจสอบแล้ว";
+  }
+
+  if (code === "not-found" || message === "report-not-found") {
+    return "ไม่พบรายงานนี้แล้ว กรุณารีเฟรชแล้วลองใหม่";
+  }
+
+  if (code === "invalid-argument") {
+    return "ข้อมูลรายงานที่จะส่งเข้าคิวตรวจสอบไม่ถูกต้อง กรุณารีเฟรชแล้วลองใหม่";
+  }
+
+  if (code === "failed-precondition") {
+    return "รายงานนี้ไม่สามารถส่งเข้าคิวตรวจสอบได้ในขณะนี้";
+  }
+
+  return message || "ส่งรายงานเข้าคิวตรวจสอบไม่สำเร็จ กรุณาลองใหม่";
 }

@@ -12,6 +12,7 @@ import { IncidentIntelligenceSection } from "@/components/sections/IncidentIntel
 import { LatestReportsSection } from "@/components/sections/LatestReportsSection";
 import { LiveMapSection } from "@/components/sections/LiveMapSection";
 import { MobileQuickActionBar } from "@/components/sections/MobileQuickActionBar";
+import { ModerationQueueSection } from "@/components/sections/ModerationQueueSection";
 import { ReportFormSection } from "@/components/sections/ReportFormSection";
 import { SelectedIncidentWorkspaceSection } from "@/components/sections/SelectedIncidentWorkspaceSection";
 import { SituationSummary } from "@/components/sections/SituationSummary";
@@ -20,6 +21,7 @@ import { TrustSecuritySection } from "@/components/sections/TrustSecuritySection
 import {
   confirmReportInBackend,
   createReportInBackend,
+  flagReportInBackend,
   getBackendSessionUserId
 } from "@/lib/firebase/reportClient";
 import { subscribeToBackendReports } from "@/lib/firebase/reportStream";
@@ -115,6 +117,8 @@ export function FireWatchApp() {
   const [localUserId, setLocalUserId] = useState("local-demo-user");
   const [reputationScore, setReputationScore] = useState(35);
   const [systemMessage, setSystemMessage] = useState<string | null>(null);
+  const [flaggingReportIds, setFlaggingReportIds] = useState<string[]>([]);
+  const [flaggedReportIds, setFlaggedReportIds] = useState<string[]>([]);
   const [currentTimeMs, setCurrentTimeMs] = useState(0);
   const [selectedAlertZoneId, setSelectedAlertZoneId] = useState<string | null>(null);
   const [isSmokePlumeEnabled, setIsSmokePlumeEnabled] = useState(true);
@@ -212,6 +216,19 @@ export function FireWatchApp() {
 
     return notHidden.filter((report) => report.verificationStatus === statusFilter);
   }, [reports, statusFilter]);
+  const moderationQueueReports = useMemo(
+    () =>
+      reports
+        .filter((report) => report.moderationStatus === "รอตรวจสอบ" || report.flaggedCount > 0)
+        .sort((first, second) => {
+          if (second.flaggedCount !== first.flaggedCount) {
+            return second.flaggedCount - first.flaggedCount;
+          }
+
+          return new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime();
+        }),
+    [reports]
+  );
 
   const selectedReport = useMemo(
     () => reports.find((report) => report.id === selectedReportId) ?? null,
@@ -448,23 +465,58 @@ export function FireWatchApp() {
     [isBackendMode, localUserId, reports]
   );
 
-  const handleFlagReport = useCallback((reportId: string) => {
-    setReports((currentReports) =>
-      currentReports.map((report) => {
-        if (report.id !== reportId) {
-          return report;
+  const handleFlagReport = useCallback(
+    async (reportId: string) => {
+      setSystemMessage(null);
+
+      if (flaggedReportIds.includes(reportId)) {
+        setSystemMessage("คุณเคยรายงานข้อมูลนี้แล้ว ระบบรับไว้ในคิวตรวจสอบแล้ว");
+        return;
+      }
+
+      setFlaggingReportIds((currentReportIds) =>
+        currentReportIds.includes(reportId)
+          ? currentReportIds
+          : [...currentReportIds, reportId]
+      );
+
+      try {
+        if (isBackendMode) {
+          await flagReportInBackend(reportId);
+        } else {
+          setReports((currentReports) =>
+            currentReports.map((report) => {
+              if (report.id !== reportId) {
+                return report;
+              }
+
+              return {
+                ...report,
+                flaggedCount: report.flaggedCount + 1,
+                moderationStatus:
+                  report.moderationStatus === "ถูกซ่อน" ? "ถูกซ่อน" : "รอตรวจสอบ"
+              };
+            })
+          );
         }
 
-        const flaggedCount = report.flaggedCount + 1;
-        return {
-          ...report,
-          flaggedCount,
-          moderationStatus: flaggedCount >= 3 ? "ถูกซ่อน" : "รอตรวจสอบ"
-        };
-      })
-    );
-    setSystemMessage("บันทึกการรายงานความไม่เหมาะสมแล้ว");
-  }, []);
+        setFlaggedReportIds((currentReportIds) =>
+          currentReportIds.includes(reportId)
+            ? currentReportIds
+            : [...currentReportIds, reportId]
+        );
+        setSelectedReportId(reportId);
+        setSystemMessage("ส่งเข้าคิวตรวจสอบแล้ว");
+      } catch (error) {
+        setSystemMessage(getErrorMessage(error));
+      } finally {
+        setFlaggingReportIds((currentReportIds) =>
+          currentReportIds.filter((currentReportId) => currentReportId !== reportId)
+        );
+      }
+    },
+    [flaggedReportIds, isBackendMode]
+  );
 
   const handleSelectAlertZone = useCallback((zoneId: string) => {
     setSelectedAlertZoneId(zoneId);
@@ -548,6 +600,8 @@ export function FireWatchApp() {
 
       <LatestReportsSection hiddenCount={hiddenCount} filters={filterControls}>
         <ReportList
+          flaggedReportIds={flaggedReportIds}
+          flaggingReportIds={flaggingReportIds}
           reports={visibleReports}
           selectedReportId={selectedReportId}
           onSelectReport={setSelectedReportId}
@@ -555,6 +609,12 @@ export function FireWatchApp() {
           onConfirmReport={handleConfirmReport}
         />
       </LatestReportsSection>
+
+      <ModerationQueueSection
+        reports={moderationQueueReports}
+        selectedReportId={selectedReportId}
+        onSelectReport={setSelectedReportId}
+      />
 
       <SelectedIncidentWorkspaceSection
         brief={incidentBrief}
