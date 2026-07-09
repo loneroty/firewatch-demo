@@ -36,6 +36,14 @@ export interface FlagReportCallableResponse {
   moderationStatus: Report["moderationStatus"];
 }
 
+export type ModerateReportAction = "hide" | "restore";
+
+export interface ModerateReportCallableResponse {
+  reportId: string;
+  action: ModerateReportAction;
+  moderationStatus: "ปกติ" | "ถูกซ่อน";
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -181,6 +189,25 @@ export function readFlagReportCallableResponse(
   return {
     reportId: data.reportId,
     flaggedCount: data.flaggedCount,
+    moderationStatus: data.moderationStatus
+  };
+}
+
+export function readModerateReportCallableResponse(
+  data: unknown
+): ModerateReportCallableResponse {
+  if (
+    !isRecord(data) ||
+    typeof data.reportId !== "string" ||
+    (data.action !== "hide" && data.action !== "restore") ||
+    (data.moderationStatus !== "ปกติ" && data.moderationStatus !== "ถูกซ่อน")
+  ) {
+    throw new Error("callable moderateReport ไม่ได้คืนค่าผลการตรวจสอบที่ถูกต้อง");
+  }
+
+  return {
+    reportId: data.reportId,
+    action: data.action,
     moderationStatus: data.moderationStatus
   };
 }
@@ -348,4 +375,43 @@ export function mapFlagReportError(error: unknown): string {
   }
 
   return message || "ส่งรายงานเข้าคิวตรวจสอบไม่สำเร็จ กรุณาลองใหม่";
+}
+
+export function mapModerateReportError(error: unknown): string {
+  const code = readErrorCode(error);
+  const message = readErrorMessage(error);
+
+  if (
+    message?.includes("App Check") ||
+    message?.includes("ยังตั้งค่า") ||
+    message?.includes("ตั้งค่าไม่ครบ")
+  ) {
+    return message;
+  }
+
+  if (isFirebaseAuthErrorCode(code)) {
+    return "เข้าสู่ระบบแบบ anonymous ไม่สำเร็จ: ตรวจว่าเปิด Anonymous Auth ใน Firebase แล้วลองใหม่";
+  }
+
+  if (code === "permission-denied" || message === "operator-role-required") {
+    return "ไม่มีสิทธิ์ตรวจสอบรายงาน";
+  }
+
+  if (code === "unauthenticated") {
+    return "ยังไม่ได้เข้าสู่ระบบ จึงตรวจสอบรายงานผ่าน Firebase backend ไม่ได้";
+  }
+
+  if (code === "not-found" || message === "report-not-found") {
+    return "ไม่พบรายงานนี้แล้ว กรุณารีเฟรชแล้วลองใหม่";
+  }
+
+  if (code === "invalid-argument" || message === "moderation-action-invalid") {
+    return "สถานะที่ส่งมาไม่ถูกต้อง กรุณารีเฟรชแล้วลองใหม่";
+  }
+
+  if (code === "internal" || message === "Request failed.") {
+    return "ไม่สามารถอัปเดตสถานะได้ กรุณาลองใหม่อีกครั้ง";
+  }
+
+  return message || "ไม่สามารถอัปเดตสถานะได้ กรุณาลองใหม่อีกครั้ง";
 }

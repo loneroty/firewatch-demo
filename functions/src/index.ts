@@ -8,6 +8,7 @@ import {
 import { confirmReportForRequest } from "./confirmReport";
 import { createReportForRequest } from "./createReport";
 import { flagReportForRequest } from "./flagReport";
+import { moderateReportForRequest } from "./moderateReport";
 import { ReportFunctionError } from "./reportValidation";
 
 initializeApp();
@@ -106,6 +107,28 @@ export const flagReport = onCall(
       );
     } catch (error) {
       console.error("flagReport callable failed", getErrorLogContext(error));
+      throw toHttpsError(error);
+    }
+  }
+);
+
+export const moderateReport = onCall(
+  {
+    region: "asia-southeast1",
+    enforceAppCheck: true
+  },
+  async (request) => {
+    try {
+      return await moderateReportForRequest(
+        {
+          authUid: request.auth?.uid ?? null,
+          payload: request.data
+        },
+        {
+          db: getFirestore()
+        }
+      );
+    } catch (error) {
       throw toHttpsError(error);
     }
   }

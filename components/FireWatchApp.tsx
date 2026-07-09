@@ -22,7 +22,9 @@ import {
   confirmReportInBackend,
   createReportInBackend,
   flagReportInBackend,
-  getBackendSessionUserId
+  getBackendOperatorRole,
+  getBackendSessionUserId,
+  moderateReportInBackend
 } from "@/lib/firebase/reportClient";
 import { subscribeToBackendReports } from "@/lib/firebase/reportStream";
 import {
@@ -55,6 +57,7 @@ import {
 } from "@/lib/verification/reputation";
 import { distanceMeters } from "@/lib/verification/geo";
 import { createLocalReport } from "@/lib/reportFactory";
+import type { ModerateReportAction } from "@/lib/firebase/reportPayload";
 import type { Report, ReportDraft, VerificationStatus } from "@/lib/types";
 
 const FireMap = dynamic(
@@ -119,6 +122,8 @@ export function FireWatchApp() {
   const [systemMessage, setSystemMessage] = useState<string | null>(null);
   const [flaggingReportIds, setFlaggingReportIds] = useState<string[]>([]);
   const [flaggedReportIds, setFlaggedReportIds] = useState<string[]>([]);
+  const [operatorRole, setOperatorRole] = useState<"moderator" | "superadmin" | null>(null);
+  const [moderatingReportKeys, setModeratingReportKeys] = useState<string[]>([]);
   const [currentTimeMs, setCurrentTimeMs] = useState(0);
   const [selectedAlertZoneId, setSelectedAlertZoneId] = useState<string | null>(null);
   const [isSmokePlumeEnabled, setIsSmokePlumeEnabled] = useState(true);
@@ -174,6 +179,32 @@ export function FireWatchApp() {
   }, [isBackendMode]);
 
   useEffect(() => {
+    let isMounted = true;
+
+    if (!isBackendMode) {
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    getBackendOperatorRole()
+      .then((role) => {
+        if (isMounted) {
+          setOperatorRole(role);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setOperatorRole(null);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isBackendMode]);
+
+  useEffect(() => {
     if (!isBackendMode && reports.length > 0) {
       saveStoredReports(reports);
     }
@@ -219,7 +250,12 @@ export function FireWatchApp() {
   const moderationQueueReports = useMemo(
     () =>
       reports
-        .filter((report) => report.moderationStatus === "รอตรวจสอบ" || report.flaggedCount > 0)
+        .filter(
+          (report) =>
+            report.moderationStatus === "รอตรวจสอบ" ||
+            report.moderationStatus === "ถูกซ่อน" ||
+            report.flaggedCount > 0
+        )
         .sort((first, second) => {
           if (second.flaggedCount !== first.flaggedCount) {
             return second.flaggedCount - first.flaggedCount;
@@ -518,6 +554,49 @@ export function FireWatchApp() {
     [flaggedReportIds, isBackendMode]
   );
 
+  const handleModerateReport = useCallback(
+    async (reportId: string, action: ModerateReportAction) => {
+      const moderationKey = `${reportId}:${action}`;
+      setSystemMessage(null);
+      setModeratingReportKeys((currentKeys) =>
+        currentKeys.includes(moderationKey) ? currentKeys : [...currentKeys, moderationKey]
+      );
+
+      try {
+        if (isBackendMode) {
+          await moderateReportInBackend(reportId, action);
+        } else {
+          setReports((currentReports) =>
+            currentReports.map((report) => {
+              if (report.id !== reportId) {
+                return report;
+              }
+
+              return {
+                ...report,
+                moderationStatus: action === "hide" ? "ถูกซ่อน" : "ปกติ"
+              };
+            })
+          );
+        }
+
+        setSelectedReportId(reportId);
+        setSystemMessage(
+          action === "hide"
+            ? "ซ่อนรายงานจากแผนที่สาธารณะแล้ว"
+            : "กู้คืนรายงานเป็นสถานะปกติแล้ว"
+        );
+      } catch (error) {
+        setSystemMessage(getErrorMessage(error));
+      } finally {
+        setModeratingReportKeys((currentKeys) =>
+          currentKeys.filter((currentKey) => currentKey !== moderationKey)
+        );
+      }
+    },
+    [isBackendMode]
+  );
+
   const handleSelectAlertZone = useCallback((zoneId: string) => {
     setSelectedAlertZoneId(zoneId);
   }, []);
@@ -611,8 +690,13 @@ export function FireWatchApp() {
       </LatestReportsSection>
 
       <ModerationQueueSection
+        canModerate={!isBackendMode || operatorRole !== null}
+        isBackendMode={isBackendMode}
+        moderatingReportKeys={moderatingReportKeys}
+        operatorRole={isBackendMode ? operatorRole : "local-demo"}
         reports={moderationQueueReports}
         selectedReportId={selectedReportId}
+        onModerateReport={handleModerateReport}
         onSelectReport={setSelectedReportId}
       />
 

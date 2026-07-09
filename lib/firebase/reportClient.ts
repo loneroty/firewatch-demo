@@ -1,8 +1,9 @@
 "use client";
 
 import { httpsCallable } from "firebase/functions";
+import { doc, getDoc } from "firebase/firestore";
 import { ref, uploadBytes } from "firebase/storage";
-import type { Report, ReportDraft } from "@/lib/types";
+import type { AdminProfile, Report, ReportDraft } from "@/lib/types";
 import {
   ensureAnonymousSession,
   ensureAppCheckToken,
@@ -17,9 +18,12 @@ import {
   mapConfirmReportError,
   mapCreateReportError,
   mapFlagReportError,
+  mapModerateReportError,
+  type ModerateReportAction,
   readConfirmReportCallableResponse,
   readCreateReportCallableResponse,
-  readFlagReportCallableResponse
+  readFlagReportCallableResponse,
+  readModerateReportCallableResponse
 } from "@/lib/firebase/reportPayload";
 
 function createReportImageId(): string {
@@ -148,5 +152,53 @@ export async function flagReportInBackend(reportId: string): Promise<void> {
     readFlagReportCallableResponse(result.data);
   } catch (error) {
     throw new Error(mapFlagReportError(error));
+  }
+}
+
+export async function getBackendOperatorRole(): Promise<AdminProfile["role"] | null> {
+  const services = getFirebaseServices();
+  if (!services) {
+    return null;
+  }
+
+  try {
+    const uid = await ensureAnonymousSession();
+    if (!uid) {
+      return null;
+    }
+
+    const adminSnapshot = await getDoc(doc(services.firestore, "admins", uid));
+    if (!adminSnapshot.exists()) {
+      return null;
+    }
+
+    const role = adminSnapshot.data().role;
+    return role === "moderator" || role === "superadmin" ? role : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function moderateReportInBackend(
+  reportId: string,
+  action: ModerateReportAction
+): Promise<void> {
+  const services = getFirebaseServices();
+  if (!services) {
+    throw new Error("Firebase backend ยังตั้งค่าไม่ครบ: เพิ่ม NEXT_PUBLIC_FIREBASE_* หรือใช้ Local demo mode");
+  }
+
+  try {
+    await ensureAppCheckToken();
+    const uid = await ensureAnonymousSession();
+    if (!uid) {
+      throw new Error("เข้าสู่ระบบแบบ anonymous ไม่สำเร็จ: Firebase Auth ไม่คืนค่า user id");
+    }
+
+    const moderateReport = httpsCallable(services.functions, "moderateReport");
+    const result = await moderateReport({ reportId, action });
+    readModerateReportCallableResponse(result.data);
+  } catch (error) {
+    throw new Error(mapModerateReportError(error));
   }
 }
