@@ -51,6 +51,7 @@ export type ReportErrorCode =
   | "unauthenticated"
   | "invalid-argument"
   | "failed-precondition"
+  | "permission-denied"
   | "already-exists"
   | "not-found"
   | "resource-exhausted"
