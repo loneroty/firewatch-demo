@@ -198,6 +198,11 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    match /incidentZoneSystem/{documentId} {
+      allow read: if documentId == 'state';
+      allow create, update, delete: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

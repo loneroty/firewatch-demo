@@ -11,6 +11,12 @@ import { flagReportForRequest } from "./flagReport";
 import { moderateReportForRequest } from "./moderateReport";
 import { ReportFunctionError } from "./reportValidation";
 
+export {
+  maintainIncidentZones,
+  onIncidentZoneJobWritten,
+  onIncidentZoneReportWritten
+} from "./incidentZones/runtime";
+
 initializeApp();
 
 function toHttpsError(error: unknown): HttpsError {

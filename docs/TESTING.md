@@ -28,6 +28,16 @@ Cloud Function report tests can be run directly with:
 npm run test:functions
 ```
 
+The guarded incident-zone backfill tool compiles during `npm run build`. Its
+default read-only mode is:
+
+```bash
+npm run zones:backfill
+```
+
+Always use an explicit non-production project for manual backfill tests. Apply
+mode requires the three guards documented in `docs/INCIDENT_ZONES_RUNBOOK.md`.
+
 ## Manual Smoke Test Checklist
 
 ### Local demo mode
@@ -58,6 +68,10 @@ npm run test:functions
 - Select the first user's report and click "ยืนยันจุดนี้"; confirm the UI shows a success message and the report status/count updates through realtime subscription.
 - Confirm no client code writes directly to `reports`; Security Rules still block direct report creates.
 - Confirm client code does not write `confirmedByReportIds` or `verificationStatus` directly; callable `confirmReport` is the only backend confirmation path.
+- Before incident-zone readiness is `ready`, confirm the intelligence panel says `client fallback` and remains usable.
+- With readiness `ready`, confirm the panel says `server canonical · realtime` and zones update from the `incidentZones` subscription.
+- With readiness `ready` and no active zone documents, confirm the panel shows an empty server result instead of client-derived zones.
+- Open a canonical `?zone=<zoneId>` link, an old alias link, and a resolved-zone link. Confirm aliases select the latest ID and resolved zones appear only as reference detail, not active map overlays.
 
 ### Failure cases
 
@@ -101,14 +115,25 @@ npm run test:functions
 - Cloud Function `confirmReport` updates `confirmedByReportIds` in a transaction and sets `verificationStatus` to `ยืนยันแล้ว` when confirmation succeeds.
 - Firestore Security Rules block direct client writes to `confirmedByReportIds` and `verificationStatus`.
 - Client backend payload helpers build Storage paths, `gs://` report payloads, callable response parsing, and user-facing backend error messages without including local-only image blobs or server-owned fields.
+- Phase 18A.1 incident-zone unit tests cover empty/single/near/distant/transitive clusters, hidden/rejected/stale exclusions, active windows, confirmation/severity/category/risk aggregates, stable add/remove IDs, merge/split tie-breaks, hidden anchors, deterministic ordering, state hashes, version changes, resolved/hidden lifecycle, and candidate/BFS limits.
+- Incident-zone parity fixtures verify shared fresh-report behavior and document intentional server differences for active windows, stable IDs, category aggregates, and resolved zones.
+- Incident-zone dry-run tests verify safe summary-only output and no partial plan after a limit failure.
+- Firestore Rules tests verify public visibility for `active`/`resolved` incident zones, denial for hidden zones and all zone writes, public alias reads with denied writes, and complete client denial for memberships/jobs.
+- Phase 18A.2 pure/client tests cover relevant-field comparison (including object-key order), geohash partition neighborhoods, defensive server payload mapping, local/server/fallback source selection, ready-empty behavior, and canonical/merged/chained/missing/resolved/looping aliases.
+- Phase 18A.2 emulator tests cover Timestamp adapters, malformed/legacy reports, irrelevant write suppression, old/new dirty regions, generation coalescing, deterministic owner forwarding, idempotent retries, the five-attempt retry ceiling, overlapping same-zone writes that preserve metadata, stale generation rejection, merge aliases, hidden/deleted lifecycle, 60/180-minute risk aging without report writes, and write-cap no-partial behavior.
+- Backfill runtime tests verify all apply guards, dry-run no-write behavior, bounded checkpoint resume, and idempotent reruns without duplicate zones.
+- Firestore Rules expose only `incidentZoneSystem/state`; the backfill checkpoint remains server-only and all client system metadata writes are denied.
 
 ## Last Verified Run
 
 - `npm.cmd run lint` passed.
-- `npm.cmd run typecheck` passed.
-- `npm.cmd run test` passed: 8 test suites, 49 tests.
-- `npm.cmd run build` passed, compiled Cloud Functions, and generated the PWA service worker.
+- `npm.cmd run typecheck` passed for the Next.js app, Cloud Functions, and the guarded zone tool compiler.
+- `npm.cmd run test` passed: unit 13 suites/101 tests, Firestore Rules 15 tests, Storage Rules 5 tests, and Cloud Functions 6 suites/54 tests.
+- `npm.cmd run build` passed, compiled Cloud Functions and the backfill tool, built the Next.js app, prerendered static routes, and generated the PWA service worker.
 - `npm.cmd audit` passed: 0 vulnerabilities.
-- `npm.cmd run test:rules` passed: 1 test suite, 8 tests. Firebase CLI warned that the user was not authenticated, but the local emulator test completed successfully.
+- `npm.cmd run test:rules` passed inside the full run: 1 test suite, 15 tests, including readiness/checkpoint boundaries.
 - `npm.cmd run test:storage` passed: 1 test suite, 5 tests. Firebase CLI warned that the user was not authenticated, but the local emulator test completed successfully.
-- `npm.cmd run test:functions` passed inside the full test run: 2 test suites, 21 tests. Firebase CLI warned that the user was not authenticated, and the Admin SDK emitted a metadata lookup warning while using the emulator, but the local emulator test completed successfully.
+- `npm.cmd run test:functions` passed inside the full run: 6 suites, 54 tests. The Admin SDK emitted a metadata lookup warning while using the emulator, but every process completed with exit code 0.
+- Browser smoke checks passed at desktop 1728x1000 and mobile 390x844: no horizontal overflow, sticky header remained at z-index 3000, both Leaflet maps remained at z-index 0 with valid heights, and marker cluster/zoom controls rendered without browser console errors.
+- The browser used the expected `client fallback` because the currently available backend did not expose the new readiness document; no report submission or production write was performed.
+- Next.js production build emitted three non-fatal webpack cache snapshot warnings after compiling and prerendering successfully.

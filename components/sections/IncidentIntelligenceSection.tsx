@@ -7,6 +7,8 @@ import { formatZoneAge } from "@/lib/incidentIntelligence";
 interface IncidentIntelligenceSectionProps {
   zones: readonly AlertZone[];
   selectedAlertZoneId: string | null;
+  sourceLabel: string;
+  sourceDescription: string;
   onSelectAlertZone: (zoneId: string) => void;
 }
 
@@ -23,6 +25,8 @@ function formatCoordinate(value: number): string {
 export function IncidentIntelligenceSection({
   zones,
   selectedAlertZoneId,
+  sourceLabel,
+  sourceDescription,
   onSelectAlertZone
 }: IncidentIntelligenceSectionProps) {
   const priorityZones = zones.slice(0, 3);
@@ -54,6 +58,9 @@ export function IncidentIntelligenceSection({
               เลือกพื้นที่เสี่ยงจากรายการนี้เพื่อเปิดรายละเอียดภาคสนาม:
               หลักฐาน timeline, แบบจำลองแนวควัน และ command brief สำหรับส่งต่อ
             </p>
+            <p className="mt-3 text-sm leading-6 text-slate-400">
+              {sourceDescription}
+            </p>
             <div className="mt-6 grid grid-cols-2 gap-3 border-y border-white/10 py-4 text-sm">
               <div>
                 <p className="font-black text-white">{zones.length}</p>
@@ -74,7 +81,7 @@ export function IncidentIntelligenceSection({
                   Priority board
                 </div>
                 <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-bold text-slate-300">
-                  client-side derived
+                  {sourceLabel}
                 </span>
               </div>
 

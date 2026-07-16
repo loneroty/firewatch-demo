@@ -28,6 +28,11 @@ import {
 } from "@/lib/firebase/reportClient";
 import { subscribeToBackendReports } from "@/lib/firebase/reportStream";
 import {
+  resolveBackendIncidentZoneDeepLink,
+  subscribeToBackendIncidentZones,
+  type ServerIncidentZoneSnapshot
+} from "@/lib/firebase/incidentZoneStream";
+import {
   getRuntimeModeLabel,
   isFirebaseBackendConfigured
 } from "@/lib/firebase/config";
@@ -39,6 +44,10 @@ import {
 } from "@/lib/incidentBrief";
 import { buildIncidentDetail } from "@/lib/incidentDetail";
 import { buildAlertZones } from "@/lib/incidentIntelligence";
+import {
+  selectIncidentZoneSource,
+  type IncidentZoneSource
+} from "@/lib/incidentZoneSource";
 import {
   buildSmokePlume,
   type SmokePlumeOptions,
@@ -58,6 +67,7 @@ import {
 import { distanceMeters } from "@/lib/verification/geo";
 import { createLocalReport } from "@/lib/reportFactory";
 import type { ModerateReportAction } from "@/lib/firebase/reportPayload";
+import type { AlertZone } from "@/lib/incidentIntelligence";
 import type { Report, ReportDraft, VerificationStatus } from "@/lib/types";
 
 const FireMap = dynamic(
@@ -126,6 +136,12 @@ export function FireWatchApp() {
   const [moderatingReportKeys, setModeratingReportKeys] = useState<string[]>([]);
   const [currentTimeMs, setCurrentTimeMs] = useState(0);
   const [selectedAlertZoneId, setSelectedAlertZoneId] = useState<string | null>(null);
+  const [deepLinkedAlertZone, setDeepLinkedAlertZone] = useState<AlertZone | null>(null);
+  const [serverIncidentZones, setServerIncidentZones] = useState<ServerIncidentZoneSnapshot>({
+    zones: [],
+    status: "loading",
+    readiness: "not-ready"
+  });
   const [isSmokePlumeEnabled, setIsSmokePlumeEnabled] = useState(true);
   const [windDirectionDegrees, setWindDirectionDegrees] = useState(45);
   const [windSpeedLevel, setWindSpeedLevel] = useState<WindSpeedLevel>("ปานกลาง");
@@ -172,6 +188,19 @@ export function FireWatchApp() {
           return nextReports[0]?.id ?? null;
         });
       },
+      onError: (message) => {
+        setSystemMessage(message);
+      }
+    });
+  }, [isBackendMode]);
+
+  useEffect(() => {
+    if (!isBackendMode) {
+      return undefined;
+    }
+
+    return subscribeToBackendIncidentZones({
+      onState: setServerIncidentZones,
       onError: (message) => {
         setSystemMessage(message);
       }
@@ -287,30 +316,66 @@ export function FireWatchApp() {
     const ageMs = currentTimeMs - createdAt;
     return currentTimeMs > 0 && Number.isFinite(createdAt) && ageMs >= 0 && ageMs <= VERIFICATION_WINDOW_MS;
   }).length;
-  const alertZones = useMemo(
+  const clientDerivedAlertZones = useMemo(
     () => buildAlertZones(reports, currentTimeMs > 0 ? new Date(currentTimeMs) : new Date()),
     [currentTimeMs, reports]
   );
+  const incidentZoneSelection = useMemo(
+    () =>
+      selectIncidentZoneSource(
+        isBackendMode,
+        serverIncidentZones.status,
+        serverIncidentZones.zones,
+        clientDerivedAlertZones
+      ),
+    [clientDerivedAlertZones, isBackendMode, serverIncidentZones]
+  );
+  const alertZones = incidentZoneSelection.zones;
+  const selectableAlertZones = useMemo(() => {
+    if (
+      deepLinkedAlertZone === null ||
+      alertZones.some((zone) => zone.id === deepLinkedAlertZone.id)
+    ) {
+      return alertZones;
+    }
+    return [...alertZones, deepLinkedAlertZone];
+  }, [alertZones, deepLinkedAlertZone]);
+  useEffect(() => {
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (
+        !cancelled &&
+        selectedAlertZoneId !== null &&
+        !selectableAlertZones.some((zone) => zone.id === selectedAlertZoneId)
+      ) {
+        setSelectedAlertZoneId(null);
+        setDeepLinkedAlertZone(null);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectableAlertZones, selectedAlertZoneId]);
   const activeSelectedAlertZoneId = useMemo(
     () =>
-      selectedAlertZoneId && alertZones.some((zone) => zone.id === selectedAlertZoneId)
+      selectedAlertZoneId && selectableAlertZones.some((zone) => zone.id === selectedAlertZoneId)
         ? selectedAlertZoneId
         : null,
-    [alertZones, selectedAlertZoneId]
+    [selectableAlertZones, selectedAlertZoneId]
   );
   const selectedAlertZone = useMemo(
-    () => alertZones.find((zone) => zone.id === activeSelectedAlertZoneId) ?? null,
-    [activeSelectedAlertZoneId, alertZones]
+    () => selectableAlertZones.find((zone) => zone.id === activeSelectedAlertZoneId) ?? null,
+    [activeSelectedAlertZoneId, selectableAlertZones]
   );
   const selectedIncidentDetail = useMemo(
     () =>
       buildIncidentDetail(
         activeSelectedAlertZoneId,
-        alertZones,
+        selectableAlertZones,
         reports,
         currentTimeMs > 0 ? new Date(currentTimeMs) : new Date()
       ),
-    [activeSelectedAlertZoneId, alertZones, currentTimeMs, reports]
+    [activeSelectedAlertZoneId, currentTimeMs, reports, selectableAlertZones]
   );
   const smokePlumeOptions = useMemo<SmokePlumeOptions>(
     () => ({
@@ -351,7 +416,7 @@ export function FireWatchApp() {
       return;
     }
 
-    queueMicrotask(() => {
+    queueMicrotask(async () => {
       if (hasAppliedDeepLinkRef.current) {
         return;
       }
@@ -371,12 +436,42 @@ export function FireWatchApp() {
         return;
       }
 
+      if (zoneParam && isBackendMode) {
+        hasAppliedDeepLinkRef.current = true;
+        const resolution = await resolveBackendIncidentZoneDeepLink(zoneParam);
+        if (resolution.status === "found") {
+          setDeepLinkedAlertZone(resolution.zone);
+          setSelectedAlertZoneId(resolution.canonicalZoneId);
+          if (resolution.zoneStatus === "resolved") {
+            setSystemMessage(
+              "ลิงก์นี้ชี้ไปยังพื้นที่ที่ยุติสถานะแล้ว จึงแสดงเพื่ออ้างอิงแต่ไม่แสดงเป็นเหตุ active บนแผนที่"
+            );
+          } else if (resolution.aliasHops > 0) {
+            setSystemMessage("เปิดพื้นที่ canonical ล่าสุดจากลิงก์เดิมแล้ว");
+          }
+          return;
+        }
+
+        setSystemMessage(
+          resolution.status === "missing"
+            ? "ไม่พบพื้นที่เสี่ยงจากลิงก์นี้ หรือข้อมูลถูกย้ายออกแล้ว"
+            : "ยังไม่สามารถเปิดพื้นที่เสี่ยงจากลิงก์นี้ได้"
+        );
+        return;
+      }
+
       if (reportParam && reports.some((report) => report.id === reportParam)) {
         setSelectedReportId(reportParam);
         hasAppliedDeepLinkRef.current = true;
+        return;
+      }
+
+      if (!isBackendMode && currentTimeMs > 0) {
+        hasAppliedDeepLinkRef.current = true;
+        setSystemMessage("ไม่พบข้อมูลจากลิงก์นี้ใน Local demo mode");
       }
     });
-  }, [alertZones, reports]);
+  }, [alertZones, currentTimeMs, isBackendMode, reports]);
 
   const handleCreateReport = useCallback(
     async (draft: ReportDraft) => {
@@ -598,12 +693,38 @@ export function FireWatchApp() {
   );
 
   const handleSelectAlertZone = useCallback((zoneId: string) => {
+    setDeepLinkedAlertZone((currentZone) =>
+      currentZone?.id === zoneId ? currentZone : null
+    );
     setSelectedAlertZoneId(zoneId);
   }, []);
 
   const handleClearAlertZone = useCallback(() => {
+    setDeepLinkedAlertZone(null);
     setSelectedAlertZoneId(null);
   }, []);
+
+  const incidentZoneSourceCopy = useMemo(() => {
+    const copy: Record<
+      IncidentZoneSource,
+      { label: string; description: string }
+    > = {
+      server: {
+        label: "server canonical · realtime",
+        description: "ใช้ incident zones ที่คำนวณและจัด identity จาก server แล้ว"
+      },
+      "client-fallback": {
+        label: "client fallback",
+        description:
+          "server zones ยังไม่พร้อมหรือ stream ขัดข้อง จึงวิเคราะห์จาก reports บนเครื่องชั่วคราว"
+      },
+      "local-demo": {
+        label: "local demo · client-derived",
+        description: "Local demo คำนวณพื้นที่เสี่ยงจากข้อมูลในเครื่องและไม่แชร์ข้ามอุปกรณ์"
+      }
+    };
+    return copy[incidentZoneSelection.source];
+  }, [incidentZoneSelection.source]);
 
   const filterControls = (
     <div className="flex flex-wrap gap-2">
@@ -674,6 +795,8 @@ export function FireWatchApp() {
       <IncidentIntelligenceSection
         zones={alertZones}
         selectedAlertZoneId={activeSelectedAlertZoneId}
+        sourceDescription={incidentZoneSourceCopy.description}
+        sourceLabel={incidentZoneSourceCopy.label}
         onSelectAlertZone={handleSelectAlertZone}
       />
 

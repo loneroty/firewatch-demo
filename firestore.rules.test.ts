@@ -437,4 +437,35 @@ describe("firestore security rules", () => {
       })
     );
   });
+
+  it("allows readiness reads only and blocks all client system metadata writes", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), "incidentZoneSystem", "state"), {
+        status: "ready",
+        algorithmVersion: "incident-zone-v1",
+        updatedAt: CREATED_AT
+      });
+      await setDoc(
+        doc(context.firestore(), "incidentZoneSystem", "backfillCheckpoint"),
+        {
+          cursor: "report-a",
+          updatedAt: CREATED_AT
+        }
+      );
+    });
+    const publicDb = testEnv.unauthenticatedContext().firestore();
+    const userDb = authedContext("user-a").firestore();
+
+    await assertSucceeds(
+      getDoc(doc(publicDb, "incidentZoneSystem", "state"))
+    );
+    await assertFails(
+      getDoc(doc(userDb, "incidentZoneSystem", "backfillCheckpoint"))
+    );
+    await assertFails(
+      setDoc(doc(userDb, "incidentZoneSystem", "state"), {
+        status: "ready"
+      })
+    );
+  });
 });

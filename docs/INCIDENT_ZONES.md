@@ -1,144 +1,179 @@
 # Server-Side Incident Zones
 
-## Phase 18A.1 Boundary
+## Phase 18A.2 Boundary
 
-Phase 18A.1 defines and tests the canonical incident-zone domain model. It does
-not run in production yet. There is no report trigger, task worker, Firestore
-adapter, apply-mode backfill, or client subscription to `incidentZones` in this
-checkpoint. The existing client-derived `buildAlertZones` flow remains the
-runtime source used by `FireWatchApp`.
+Phase 18A.2 adds a server runtime around the Phase 18A.1 pure canonical engine.
+The pure modules (`domain.ts`, `stableIdentity.ts`, and `stateHash.ts`) still do
+not import Firebase or Firestore. Runtime adapters convert Firestore values at
+the boundary and call `buildCanonicalIncidentZones` with plain epoch
+milliseconds and domain objects.
 
-The pure engine lives under `functions/src/incidentZones/` and has no Firestore
-SDK dependency. Domain timestamps are epoch milliseconds. A future Phase 18A.2
-adapter must convert those values to and from Firestore `Timestamp` values at
-the persistence boundary.
+This code has not been deployed. Existing report callables are unchanged, and
+Local demo mode still uses client-derived `buildAlertZones`.
 
-## Canonical Collections
+## Runtime Flow
+
+1. `onIncidentZoneReportWritten` receives `reports/{reportId}` create, update,
+   or delete events.
+2. A pure change detector compares only intelligence fields. A
+   `flaggedCount`-only update does not enqueue work.
+3. The trigger marks old and new 5-character geohash neighborhoods dirty. A
+   transaction coalesces rapid changes into one job per partition by
+   incrementing `generation`.
+4. `onIncidentZoneJobWritten` acquires a two-minute transaction lease and
+   loads a bounded connected region.
+5. Candidate queries use geohash prefix bounds plus the 180-minute active
+   cutoff. Haversine distance is the final 500m membership check.
+6. The worker invokes the pure canonical engine, chooses one deterministic
+   owner partition, and commits zones, memberships, aliases, and job completion
+   in one transaction.
+7. `maintainIncidentZones` runs every ten minutes. It enqueues zones whose
+   `nextEvaluationAt` is due and resets bounded expired/failed jobs. It does not
+   scan an entire collection.
+
+## Bounds and Failure Behavior
+
+- Coarse partition: geohash precision 5, with a deterministic 3x3 initial
+  neighborhood.
+- Active report query window: 180 minutes.
+- Candidate reports: at most 1,000.
+- Connected partitions: at most 64.
+- Pure BFS rounds: at most 64.
+- Worker attempts: at most 5 per generation, with bounded exponential delay.
+- Canonical transaction: at most 450 planned writes, leaving headroom below
+  Firestore's transaction write limit.
+
+Any cap failure marks the job failed with a bounded retry schedule. After five
+attempts in one generation it remains failed with no automatic next attempt;
+a newer report change creates a new generation and retry budget. The writer is
+not called, so no partial canonical state is written.
+
+## Collections
 
 ### `incidentZones/{zoneId}`
 
-The canonical zone document contains:
+Stores stable identity, sorted report membership, aggregate location/category/
+risk evidence, lifecycle status, `stateHash`, `version`, and
+`nextEvaluationAt`. Empty zones become `resolved` or `hidden`; documents are
+never deleted by this runtime.
 
-- Identity: `id`, `anchorReportId`, `algorithmVersion`, `stateHash`, `version`
-- Membership: sorted `reportIds`, `reportCount`
-- Location: rounded `centerLat`, `centerLng`, `geohash`
-- Categories: sorted `categories` and normalized `categoryCounts`
-- Risk: `riskLevel`, `riskRank`, `riskScore`, `riskFactors`
-- Evidence aggregate: `maxSeverity`, `averageSeverity`, `verifiedReportCount`,
-  `latestReportAt`, `primaryAddressLabel`
-- Lifecycle: `status` (`active`, `resolved`, or `hidden`), `nextEvaluationAt`,
-  `createdAt`, `updatedAt`
+### `incidentZoneMemberships/{reportId}`
 
-Existing zones retain `createdAt`. `updatedAt` and `version` change only when
-the semantic `stateHash` changes. A zone with no active members remains as a
-`resolved` or `hidden` document instead of being deleted.
+Server-only ownership record:
 
-### Supporting documents
+- `reportId`
+- `canonicalZoneId`
+- `status` (`active` or `inactive`)
+- `algorithmVersion`
+- `assignedAt`
+- `updatedAt`
 
-- `incidentZoneMemberships/{reportId}` maps a report to its current or previous
-  zone and records whether membership is active.
-- `incidentZoneAliases/{oldZoneId}` resolves a merged zone ID to its canonical
-  ID.
-- `incidentZoneJobs/{partitionKey}` defines the future dirty-partition job
-  envelope, lease fields, generation, attempts, and safe error code. No worker
-  is implemented in Phase 18A.1.
+One document per report prevents two simultaneous active canonical memberships.
 
-## Deterministic Recompute
+### `incidentZoneAliases/{oldZoneId}`
 
-The engine uses a 500 metre connected-component radius with explicit time
-windows:
+Publicly readable deep-link redirect with `canonicalZoneId`, reason (`merge`
+or future `migration`), algorithm version, and timestamps. Writes reject
+self-links, retargeting, excessive chains, and loops.
 
-- `WATCH_WINDOW_MS`: 60 minutes, matching verification freshness.
-- `ACTIVE_MEMBERSHIP_WINDOW_MS`: 180 minutes, matching risk aging.
-- `STALE_WINDOW_MS`: 360 minutes, used to distinguish inactive from stale
-  exclusions. Neither inactive nor stale reports can bridge active zones.
+### `incidentZoneJobs/{partitionKey}`
 
-Each recomputation accepts `reports`, `previousZones`, and `now`. It sorts all
-outputs deterministically and enforces these bounds:
+Server-only work envelope containing bounded dirty centers/report IDs,
+`generation`, lease owner/expiry, attempts, retry time, and a non-sensitive
+error code. Rapid writes update this document instead of creating unbounded
+tasks.
 
-- At most 1,000 candidate reports.
-- At most 64 BFS expansion rounds per connected component.
+### `incidentZoneSystem/state`
 
-Exceeding either bound returns `limit-exceeded` without a partial mutation plan.
-Phase 18A.2 must supply already bounded, partition-local candidates; it must not
-read the entire reports collection silently.
+Client-readable readiness metadata. Supported status values are `not-ready`
+(including a missing document), `backfilling`, `ready`, and `error`. The client
+uses server zones only when status is `ready`; a ready collection with zero
+zones is treated as a valid empty result.
 
-## Stable Identity
+`incidentZoneSystem/backfillCheckpoint` is server-only.
 
-- A new zone normally uses `zone_<anchorReportId>`, where the anchor is the
-  earliest report with a lexical ID tie-break.
-- Adding or removing members does not rename an existing zone.
-- A merge keeps the oldest previous zone (`createdAt`, then lexical ID) and
-  emits aliases for losing IDs.
-- A split lets the component with greatest membership overlap retain the old
-  ID. Ties use anchor time, anchor ID, then component key.
-- The stored anchor is lineage metadata. Hiding, rejecting, or removing the
-  anchor report does not rename the zone.
-- A deterministic suffix is used only if a new split component's normal anchor
-  ID collides with a retained or historical zone ID.
+## Idempotency and Concurrency
 
-## State Hash and Version
+- A lease is acquired in a transaction and records the current generation.
+- A newer report event can increment generation while the lease is active.
+- The writer checks generation again before any canonical write. A stale worker
+  returns the job to `pending` without zone changes.
+- The lexical owner of report/previous-zone partitions performs the write;
+  overlapping jobs forward to that owner.
+- Existing zone hashes are read and compared in the write transaction.
+- Membership records are read before update. An active membership owned by an
+  unrelated zone produces a conflict instead of being overwritten.
+- An unchanged state hash means no zone upsert, version bump, or `updatedAt`
+  change.
+- Existing aliases may be written again only with the same canonical target.
 
-`stateHash` is SHA-256 over canonical JSON containing semantic fields only.
-Arrays and category maps are normalized, report IDs are sorted, coordinates
-are rounded to six decimal places, and object keys are recursively sorted.
-`createdAt`, `updatedAt`, `version`, and Firestore object identity are excluded.
+## Risk Aging
 
-A no-op recomputation preserves `stateHash`, `version`, and `updatedAt`. A real
-membership, aggregate, risk, lifecycle, algorithm, or reevaluation-state change
-produces a new hash, increments `version`, and sets `updatedAt` to the supplied
-`now`.
+The pure engine sets `nextEvaluationAt` at the 60-minute and 180-minute
+boundaries. The scheduled maintenance query enqueues due active zones in
+batches of 20. The worker recomputes from server timestamps, so client clocks
+cannot change canonical risk. At 180 minutes, reports leave active membership
+and an empty zone is preserved as resolved/hidden.
 
-## Rules and Index
+## Safe Backfill
 
-- Public and authenticated clients may read `active` and `resolved`
-  `incidentZones`; `hidden` zones are not public.
-- Aliases are publicly readable for future deep-link resolution.
-- No client can write zones or aliases.
-- Memberships and jobs have no client read/write access.
-- Admin clients also have no direct write exception; future persistence uses
-  the Admin SDK after server-side authorization.
+`functions/scripts/backfillIncidentZones.ts` compiles through
+`functions/tsconfig.scripts.json` and runs with:
 
-The one composite index supports the future public query:
-
-```text
-incidentZones where status == "active"
-  order by riskRank desc
-  order by updatedAt desc
+```powershell
+npm.cmd run zones:backfill
 ```
 
-Automatic indexing is disabled for `incidentZones.reportIds` because the
-planned query surface does not filter by the full membership array.
+The default is always dry-run and performs no writes. Dry-run scans a bounded
+batch, validates adapters, builds a comparison preview, and reports aggregate
+counts without logging photo URLs, notes, or user IDs.
 
-## Dry-Run Backfill
+Apply mode is rejected unless all of these are explicitly supplied at runtime:
 
-`planIncidentZoneBackfillDryRun` invokes the pure engine and returns counts only:
-reports considered/excluded, zones created/merged/split, aliases,
-memberships, and state changes. It has no apply mode, Firestore write, public
-callable, or detailed report output. It does not expose `photoURL`, `notes`, or
-`userId`.
+- `FIREWATCH_ZONE_BACKFILL_APPLY` enabled
+- current project included in `FIREWATCH_ZONE_BACKFILL_ALLOWED_PROJECTS`
+- `FIREWATCH_ZONE_BACKFILL_CONFIRMATION` exactly
+  `APPLY_INCIDENT_ZONES`
 
-## Intentional Client Parity Differences
+Batch size is capped at 50; worker processing is capped at 64 jobs per run. A
+server-only checkpoint stores the report cursor. Interrupted runs resume from
+that cursor, and repeated runs use the same idempotent worker path. No apply
+value is committed to an environment example.
 
-The server fixtures preserve current 500 metre connected components and risk
-aggregates for fresh reports, but intentionally differ from the client engine:
+## Client Migration
 
-- The server excludes reports after the 180 minute active window; client zones
-  currently include all eligible historical reports.
-- Server IDs are stable lineage IDs; client IDs are rebuilt from all member IDs.
-- The server persists category counts, geohash, lifecycle, state hash, and
-  version metadata.
-- Empty server zones become `resolved` or `hidden`; the client returns no zone.
-- Server risk aging is driven by `nextEvaluationAt` boundaries so a future
-  worker can recompute without new report writes.
+- Local demo: always client-derived zones from local reports.
+- Firebase backend with readiness `ready`: realtime canonical server zones.
+- Firebase backend while loading/backfilling or on stream error: client-derived
+  fallback with an explicit source label.
+- Firebase backend with readiness `ready` and zero zones: server source with an
+  empty result, not fallback.
 
-These differences are migration inputs, not a client behavior change in
-Phase 18A.1.
+Active server zones feed the existing map and intelligence panel. A resolved
+zone opened through a deep link can populate the selected incident workspace,
+but is not reintroduced as an active map overlay.
 
-## Before Phase 18A.2
+Deep links first read `incidentZones/{id}`, then follow public aliases for at
+most eight hops. Missing, hidden/unreadable, malformed, looping, and excessive
+chains return a graceful unavailable state.
 
-The next checkpoint still needs a bounded geohash/partition query adapter,
-dirty-region trigger, idempotent worker writes, existing-alias resolution,
-lease/retry behavior, a guarded apply backfill, and dual-mode client migration.
-Production scale and hot-partition behavior remain unverified until those
-pieces exist and emulator integration tests cover them.
+## Query to Index Mapping
+
+| Runtime query | Composite index |
+| --- | --- |
+| Active client zones ordered by risk/update | `incidentZones: status ASC, riskRank DESC, updatedAt DESC` |
+| Due risk reevaluation | `incidentZones: status ASC, nextEvaluationAt ASC` |
+| Candidate reports by geohash and active cutoff | `reports: geohash ASC, createdAt ASC` |
+| Expired leases | `incidentZoneJobs: status ASC, leaseExpiresAt ASC` |
+| Due failed jobs | `incidentZoneJobs: status ASC, nextAttemptAt ASC` |
+| Bounded backfill pending jobs | `incidentZoneJobs: status ASC, updatedAt ASC` |
+
+Automatic indexing remains disabled for `incidentZones.reportIds` because no
+runtime query filters by the full array.
+
+## Rollout Gate
+
+Do not deploy the report trigger, worker, or scheduler before completing a
+backfill dry-run and reviewing parity against client-derived zones. Follow
+`docs/INCIDENT_ZONES_RUNBOOK.md`. Phase 18A.2 does not include FCM, Web Push,
+VAPID, subscriptions, push devices, or a notification outbox.

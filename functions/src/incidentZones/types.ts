@@ -82,26 +82,6 @@ export interface IncidentZoneAlias {
   createdAt: number;
 }
 
-export type IncidentZoneJobStatus =
-  | "pending"
-  | "leased"
-  | "completed"
-  | "failed";
-
-export interface IncidentZoneJob {
-  partitionKey: string;
-  dirtyGeohashes: string[];
-  generation: number;
-  status: IncidentZoneJobStatus;
-  attemptCount: number;
-  leaseOwner: string | null;
-  leaseExpiresAt: number | null;
-  nextAttemptAt: number | null;
-  lastErrorCode: string | null;
-  createdAt: number;
-  updatedAt: number;
-}
-
 export type IncidentZoneExclusionReason =
   | "duplicate-id"
   | "future"

@@ -29,6 +29,14 @@ The format is based on Keep a Changelog.
 - UI action for "ยืนยันจุดนี้" with Thai success/error messages and local demo fallback behavior.
 - Emulator-backed tests for `confirmReport` and Security Rules coverage blocking direct client edits to `confirmedByReportIds`.
 - Phase 6 polished multi-section web UI with navbar, hero, situation summary, live map, report form, latest reports, workflow explanation, security notes, and demo mode notes.
+- Phase 18A.1 pure server-side incident-zone engine with deterministic 500m clustering, bounded active windows, stable merge/split identity, canonical state hashing, and dry-run backfill planning.
+- Canonical `incidentZones`, membership, alias, and future job schemas with Firestore read boundaries, a minimal public-zone query index, and emulator-backed Rules coverage.
+- Unit and parity fixtures for incident-zone clustering, risk/category aggregation, stable IDs, lifecycle transitions, idempotent versions, hard limits, and intentional client/server differences.
+- Phase 18A.2 Firestore adapters, relevant report-change detector, geohash dirty-region queue, lease/generation worker, transactional canonical writer, and bounded risk-aging maintenance.
+- Dry-run-first incident-zone backfill CLI with project allowlist, typed confirmation, bounded batches, resume checkpoint, and idempotent worker reuse.
+- Realtime server incident-zone/readiness subscription, client fallback source selection, and alias-aware canonical/resolved deep links.
+- Emulator and unit coverage for dirty-job coalescing, overlapping owner partitions, stale generations, merge aliases, lifecycle/aging, write caps, backfill safety, readiness Rules, and client migration states.
+- Incident-zone runtime architecture and rollout/rollback runbook.
 
 ### Changed
 
@@ -37,3 +45,6 @@ The format is based on Keep a Changelog.
 - Updated README with Competition Demo Quick Start for local judging setup.
 - Updated README, project state, testing guide, demo checklist, and demo script for Firebase shared backend mode.
 - Improved ReportForm, ReportList, and map container presentation while keeping local demo and Firebase backend flows unchanged.
+- Documented the Phase 18A.1 server-zone contract while keeping client-derived Alert Zones as the current runtime source of truth.
+- Firebase backend intelligence now prefers canonical server zones only after explicit readiness; Local demo and backend-not-ready/error states retain the existing client-derived fallback, including authoritative ready-empty handling.
+- Expanded Firestore indexes only for the report candidate, active-zone, due-aging, retry, and backfill queries used by the Phase 18A.2 runtime.

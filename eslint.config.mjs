@@ -7,7 +7,8 @@ const eslintConfig = [
       "public/sw.js",
       "public/workbox-*.js",
       "public/worker-*.js",
-      "functions/lib/**"
+      "functions/lib/**",
+      "functions/lib-scripts/**"
     ]
   },
   ...nextCoreWebVitals,

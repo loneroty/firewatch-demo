@@ -18,6 +18,7 @@ public/workbox-*.js
 public/worker-*.js
 public/fallback-*.js
 functions/lib/
+functions/lib-scripts/
 firestore-debug.log
 
 # Local logs/build cache
