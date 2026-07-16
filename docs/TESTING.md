@@ -59,6 +59,20 @@ npm run test:functions
 - Confirm no client code writes directly to `reports`; Security Rules still block direct report creates.
 - Confirm client code does not write `confirmedByReportIds` or `verificationStatus` directly; callable `confirmReport` is the only backend confirmation path.
 
+### Incident Replay and heatmap
+
+- In Live mode, confirm the existing report markers, marker clusters, Alert Zones, plume overlay, selected report/zone, popup, and zoom controls still behave as before.
+- Enter Replay, choose each 1/3/6/12/24-hour window and `ทั้งหมด`, then confirm the slider starts at the first eligible report in that period and ends at the current time.
+- Test play, pause, reset, 1x/2x/4x, manual slider commit, and automatic stop at the end. Confirm the change summary updates at bucket boundaries rather than every animation frame.
+- Toggle Heatmap in both Live and Replay. Confirm hidden/rejected reports are absent, verified/high-severity reports have stronger weight, and the non-interactive heat layer does not block marker, cluster, Alert Zone, popup, or zoom interaction.
+- Open a valid replay deep link such as `?mode=replay&at=2026-06-29T12:00:00.000Z&window=6h`; confirm existing `?zone=` or `?report=` parameters still work when their target exists.
+- Try invalid `at`/`window` values and malformed report timestamps; confirm the UI falls back safely without `Invalid Date`, `NaN`, or a crash.
+- With no eligible reports, confirm the EmptyState is shown and the timeline slider is disabled.
+- With at least 1,000 reports, confirm playback remains responsive and timeline markers are aggregated to at most 60 buckets.
+- Check desktop at approximately 1728px: navbar remains above Leaflet, map height is stable, and controls do not cover map controls.
+- Check mobile at 390x844: controls wrap into rows, targets are at least about 44px, the slider remains usable, bottom quick actions remain visible, and there is no horizontal overflow.
+- Repeat the Replay checks in Local demo mode and Firebase backend mode; Replay must not write snapshots, heat points, or settings to Firestore.
+
 ### Failure cases
 
 - No Firebase env: app should stay in Local demo mode and continue working.
@@ -101,14 +115,16 @@ npm run test:functions
 - Cloud Function `confirmReport` updates `confirmedByReportIds` in a transaction and sets `verificationStatus` to `ยืนยันแล้ว` when confirmation succeeds.
 - Firestore Security Rules block direct client writes to `confirmedByReportIds` and `verificationStatus`.
 - Client backend payload helpers build Storage paths, `gs://` report payloads, callable response parsing, and user-facing backend error messages without including local-only image blobs or server-owned fields.
+- Incident Replay helper tests cover empty/single snapshots, cursor boundaries, all time windows, hidden/rejected filtering, heat weights, deterministic ordering, malformed timestamps/coordinates, bucket aggregation, metrics, snapshot changes, risk escalation, zone merge, playback completion, selected-zone cleanup, and unchanged Live collection references.
 
 ## Last Verified Run
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test` passed: 8 test suites, 49 tests.
-- `npm.cmd run build` passed, compiled Cloud Functions, and generated the PWA service worker.
+- `npm.cmd run test` passed: unit 10 suites / 87 tests, Firestore Rules 1 suite / 9 tests, Storage Rules 1 suite / 5 tests, and Cloud Functions 4 suites / 37 tests.
+- `npm.cmd run build` passed, compiled Cloud Functions, generated the production Next.js output, and generated the PWA service worker.
 - `npm.cmd audit` passed: 0 vulnerabilities.
-- `npm.cmd run test:rules` passed: 1 test suite, 8 tests. Firebase CLI warned that the user was not authenticated, but the local emulator test completed successfully.
-- `npm.cmd run test:storage` passed: 1 test suite, 5 tests. Firebase CLI warned that the user was not authenticated, but the local emulator test completed successfully.
-- `npm.cmd run test:functions` passed inside the full test run: 2 test suites, 21 tests. Firebase CLI warned that the user was not authenticated, and the Admin SDK emitted a metadata lookup warning while using the emulator, but the local emulator test completed successfully.
+- `npm.cmd run test:rules` passed: 1 test suite, 9 tests.
+- `npm.cmd run test:storage` passed: 1 test suite, 5 tests.
+- `npm.cmd run test:functions` passed inside the full test run: 4 test suites, 37 tests. The Admin SDK emitted a non-fatal metadata lookup warning while using the Functions emulator.
+- Manual smoke checks passed at desktop 1728px and mobile 390x844 for Replay controls, playback/pause, Heatmap, marker clusters, zoom controls, stable map height, navbar/map stacking, 44px mobile actions, and horizontal overflow. Local demo mode also returned HTTP 200 with Firebase public environment values unset.

@@ -162,6 +162,8 @@ export function ModerationQueueSection({
                       type="button"
                       onClick={() => onSelectReport(report.id)}
                     >
+                      {/* Evidence URLs can be remote or local demo data and need the native error fallback. */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         className="h-full w-full object-cover transition duration-200 group-hover:scale-[1.03]"
                         src={report.photoURL}

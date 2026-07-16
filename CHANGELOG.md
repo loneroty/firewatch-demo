@@ -29,6 +29,9 @@ The format is based on Keep a Changelog.
 - UI action for "ยืนยันจุดนี้" with Thai success/error messages and local demo fallback behavior.
 - Emulator-backed tests for `confirmReport` and Security Rules coverage blocking direct client edits to `confirmedByReportIds`.
 - Phase 6 polished multi-section web UI with navbar, hero, situation summary, live map, report form, latest reports, workflow explanation, security notes, and demo mode notes.
+- Phase 19 client-side Incident Replay controls with 1/3/6/12/24-hour and all-history windows, play/pause/reset, 1x/2x/4x playback, aggregate timeline markers, deterministic change summaries, and safe replay deep links.
+- Lightweight Leaflet Canvas heat overlay weighted by report severity and verification status, with hidden and rejected reports excluded.
+- Deterministic replay snapshot helpers and 33 unit tests covering time filtering, windows, buckets, metrics, heat weights, zone changes, malformed timestamps, playback timing, and Live-mode preservation.
 
 ### Changed
 
@@ -37,3 +40,4 @@ The format is based on Keep a Changelog.
 - Updated README with Competition Demo Quick Start for local judging setup.
 - Updated README, project state, testing guide, demo checklist, and demo script for Firebase shared backend mode.
 - Improved ReportForm, ReportList, and map container presentation while keeping local demo and Firebase backend flows unchanged.
+- Made client-derived Alert Zones, risk aging, selected-zone cleanup, and incident detail time-aware while Replay mode is active; Live mode continues to use the existing realtime/local report flows.

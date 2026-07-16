@@ -9,6 +9,7 @@ import {
   type AlertZone,
   type RiskLevel
 } from "@/lib/incidentIntelligence";
+import type { ReplayHeatPoint } from "@/lib/incidentReplay";
 import { getCategoryLabel, getSeverityLabel } from "@/lib/reportLabels";
 import type { SmokePlume } from "@/lib/smokePlume";
 import type { Report, VerificationStatus } from "@/lib/types";
@@ -18,6 +19,8 @@ interface FireMapProps {
   selectedReport: Report | null;
   onSelectReport: (reportId: string) => void;
   alertZones: readonly AlertZone[];
+  heatmapEnabled: boolean;
+  heatPoints: readonly ReplayHeatPoint[];
   selectedAlertZoneId: string | null;
   smokePlume: SmokePlume | null;
   onSelectAlertZone: (zoneId: string) => void;
@@ -147,11 +150,23 @@ function getSmokePlumePathOptions(plume: SmokePlume): L.PolylineOptions {
   };
 }
 
+function getHeatPointTone(weight: number): string {
+  if (weight >= 0.85) {
+    return "#dc2626";
+  }
+  if (weight >= 0.55) {
+    return "#f97316";
+  }
+  return "#f59e0b";
+}
+
 export function FireMap({
   reports,
   selectedReport,
   onSelectReport,
   alertZones,
+  heatmapEnabled,
+  heatPoints,
   selectedAlertZoneId,
   smokePlume,
   onSelectAlertZone
@@ -159,6 +174,8 @@ export function FireMap({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
+  const heatLayerRef = useRef<L.LayerGroup | null>(null);
+  const heatRendererRef = useRef<L.Canvas | null>(null);
   const plumeLayerRef = useRef<L.LayerGroup | null>(null);
   const zoneLayerRef = useRef<L.LayerGroup | null>(null);
   const zoneCircleRefs = useRef<Map<string, L.Circle>>(new Map());
@@ -185,6 +202,10 @@ export function FireMap({
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     }).addTo(map);
 
+    const heatLayer = L.layerGroup();
+    heatLayer.addTo(map);
+    const heatRenderer = L.canvas({ padding: 0.5, tolerance: 0 });
+
     const plumeLayer = L.layerGroup();
     plumeLayer.addTo(map);
 
@@ -199,6 +220,8 @@ export function FireMap({
     cluster.addTo(map);
     mapRef.current = map;
     clusterRef.current = cluster;
+    heatLayerRef.current = heatLayer;
+    heatRendererRef.current = heatRenderer;
     plumeLayerRef.current = plumeLayer;
     zoneLayerRef.current = zoneLayer;
 
@@ -208,11 +231,41 @@ export function FireMap({
       map.remove();
       mapRef.current = null;
       clusterRef.current = null;
+      heatLayerRef.current = null;
+      heatRendererRef.current = null;
       plumeLayerRef.current = null;
       zoneLayerRef.current = null;
       zoneCircleStore.clear();
     };
   }, []);
+
+  useEffect(() => {
+    const heatLayer = heatLayerRef.current;
+    const heatRenderer = heatRendererRef.current;
+    if (!heatLayer || !heatRenderer) {
+      return;
+    }
+
+    heatLayer.clearLayers();
+    if (!heatmapEnabled) {
+      return;
+    }
+
+    heatPoints.forEach((point) => {
+      const circle = L.circleMarker([point.lat, point.lng], {
+        renderer: heatRenderer,
+        radius: 12 + point.weight * 16,
+        stroke: false,
+        fill: true,
+        fillColor: getHeatPointTone(point.weight),
+        fillOpacity: 0.08 + point.weight * 0.18,
+        interactive: false,
+        bubblingMouseEvents: false
+      });
+      circle.addTo(heatLayer);
+      circle.bringToBack();
+    });
+  }, [heatmapEnabled, heatPoints]);
 
   useEffect(() => {
     const plumeLayer = plumeLayerRef.current;

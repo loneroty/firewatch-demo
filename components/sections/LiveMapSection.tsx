@@ -5,9 +5,10 @@ import { StatusLegend } from "@/components/ui/StatusLegend";
 
 interface LiveMapSectionProps {
   children: ReactNode;
+  controls?: ReactNode;
 }
 
-export function LiveMapSection({ children }: LiveMapSectionProps) {
+export function LiveMapSection({ children, controls }: LiveMapSectionProps) {
   return (
     <section id="live-map" className="relative z-0 isolate scroll-mt-28 bg-[#f8f5ee] px-4 py-16 md:py-20">
       <div className="mx-auto max-w-[1440px]">
@@ -25,6 +26,8 @@ export function LiveMapSection({ children }: LiveMapSectionProps) {
           </p>
         </Reveal>
 
+        {controls}
+
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
           <Reveal className="relative z-0 isolate overflow-hidden rounded-lg border border-slate-900/10 bg-[#07111f] p-3 shadow-[0_28px_80px_rgb(15_23_42_/_0.22)]">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3 px-1 text-xs text-slate-300">
@@ -32,7 +35,7 @@ export function LiveMapSection({ children }: LiveMapSectionProps) {
                 <MapPinned aria-hidden="true" size={15} />
                 Realtime watch board
               </span>
-              <span className="text-slate-500">Markers / zones / plume overlay</span>
+              <span className="text-slate-500">Markers / heat / zones / plume</span>
             </div>
             <div className="relative z-0 isolate h-[480px] overflow-hidden rounded-md border border-white/10 bg-smoke-100 transition-shadow duration-300 hover:shadow-[0_0_0_1px_rgb(249_115_22_/_0.22)] md:h-[600px] lg:h-[700px]">
               {children}
@@ -59,6 +62,9 @@ export function LiveMapSection({ children }: LiveMapSectionProps) {
                 </p>
                 <p>
                   <span className="font-black text-smoke-950">แนว plume</span> คือแบบจำลองช่วยประเมินเบื้องต้นเมื่อเลือกพื้นที่เสี่ยง
+                </p>
+                <p>
+                  <span className="font-black text-smoke-950">Heatmap</span> แสดงความหนาแน่นแบบถ่วงน้ำหนักจาก severity และสถานะยืนยัน
                 </p>
                 <p className="rounded-md border border-smoke-200 bg-smoke-50 p-3 text-xs leading-5">
                   backend mode แชร์ข้อมูลข้ามอุปกรณ์ผ่าน Firestore realtime โดย client ไม่เขียนสถานะยืนยันเอง

@@ -14,6 +14,10 @@ import { LiveMapSection } from "@/components/sections/LiveMapSection";
 import { MobileQuickActionBar } from "@/components/sections/MobileQuickActionBar";
 import { ModerationQueueSection } from "@/components/sections/ModerationQueueSection";
 import { ReportFormSection } from "@/components/sections/ReportFormSection";
+import {
+  ReplayControlPanel,
+  type ReplayObservedEvent
+} from "@/components/sections/ReplayControlPanel";
 import { SelectedIncidentWorkspaceSection } from "@/components/sections/SelectedIncidentWorkspaceSection";
 import { SituationSummary } from "@/components/sections/SituationSummary";
 import { TopNav } from "@/components/sections/TopNav";
@@ -39,6 +43,30 @@ import {
 } from "@/lib/incidentBrief";
 import { buildIncidentDetail } from "@/lib/incidentDetail";
 import { buildAlertZones } from "@/lib/incidentIntelligence";
+import {
+  advanceReplayCursor,
+  buildReplayBuckets,
+  buildReplayChangeSummary,
+  buildReplaySnapshot,
+  calculateHeatPoints,
+  calculateReplayMetrics,
+  clampReplayCursor,
+  filterReportsAtCursor,
+  findReplayTimeBounds,
+  parseReplayTimestamp,
+  parseReplayWindow,
+  prepareReplayReports,
+  REPLAY_DEFAULT_WINDOW,
+  REPLAY_WINDOW_MS,
+  selectReplayViewData,
+  shouldClearSelectedReplayZone,
+  snapReplayCursorToBucket,
+  type ReplayChangeSummary,
+  type ReplayMode,
+  type ReplaySnapshot,
+  type ReplaySpeed,
+  type ReplayWindowKey
+} from "@/lib/incidentReplay";
 import {
   buildSmokePlume,
   type SmokePlumeOptions,
@@ -125,12 +153,29 @@ export function FireWatchApp() {
   const [operatorRole, setOperatorRole] = useState<"moderator" | "superadmin" | null>(null);
   const [moderatingReportKeys, setModeratingReportKeys] = useState<string[]>([]);
   const [currentTimeMs, setCurrentTimeMs] = useState(0);
+  const [isReportDataReady, setIsReportDataReady] = useState(false);
   const [selectedAlertZoneId, setSelectedAlertZoneId] = useState<string | null>(null);
+  const [replayMode, setReplayMode] = useState<ReplayMode>("live");
+  const [replayCursorMs, setReplayCursorMs] = useState(0);
+  const [replayWindowKey, setReplayWindowKey] = useState<ReplayWindowKey>(
+    REPLAY_DEFAULT_WINDOW
+  );
+  const [replayPlaying, setReplayPlaying] = useState(false);
+  const [replaySpeed, setReplaySpeed] = useState<ReplaySpeed>(1);
+  const [heatmapEnabled, setHeatmapEnabled] = useState(false);
+  const [replayChangeSummary, setReplayChangeSummary] =
+    useState<ReplayChangeSummary | null>(null);
+  const [replayObservedEvents, setReplayObservedEvents] = useState<
+    ReplayObservedEvent[]
+  >([]);
   const [isSmokePlumeEnabled, setIsSmokePlumeEnabled] = useState(true);
   const [windDirectionDegrees, setWindDirectionDegrees] = useState(45);
   const [windSpeedLevel, setWindSpeedLevel] = useState<WindSpeedLevel>("ปานกลาง");
   const [briefBaseUrl, setBriefBaseUrl] = useState("https://firewatch.local/");
   const hasAppliedDeepLinkRef = useRef(false);
+  const hasAppliedReplayDeepLinkRef = useRef(false);
+  const replayCursorRef = useRef(0);
+  const previousReplaySnapshotRef = useRef<ReplaySnapshot | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -145,6 +190,7 @@ export function FireWatchApp() {
       setSelectedReportId(storedReports[0]?.id ?? null);
       if (!isBackendMode) {
         setLocalUserId(getOrCreateLocalUserId());
+        setIsReportDataReady(true);
       }
     });
 
@@ -161,6 +207,7 @@ export function FireWatchApp() {
     return subscribeToBackendReports({
       onReports: (nextReports) => {
         setReports(nextReports);
+        setIsReportDataReady(true);
         setSelectedReportId((currentSelectedReportId) => {
           if (
             currentSelectedReportId &&
@@ -173,6 +220,7 @@ export function FireWatchApp() {
         });
       },
       onError: (message) => {
+        setIsReportDataReady(true);
         setSystemMessage(message);
       }
     });
@@ -287,9 +335,95 @@ export function FireWatchApp() {
     const ageMs = currentTimeMs - createdAt;
     return currentTimeMs > 0 && Number.isFinite(createdAt) && ageMs >= 0 && ageMs <= VERIFICATION_WINDOW_MS;
   }).length;
-  const alertZones = useMemo(
+  const preparedReplayReports = useMemo(
+    () => prepareReplayReports(reports),
+    [reports]
+  );
+  const replayWindowMs = REPLAY_WINDOW_MS[replayWindowKey];
+  const replayBounds = useMemo(
+    () =>
+      currentTimeMs > 0
+        ? findReplayTimeBounds(
+            preparedReplayReports,
+            replayWindowMs,
+            currentTimeMs
+          )
+        : null,
+    [currentTimeMs, preparedReplayReports, replayWindowMs]
+  );
+  const replayBuckets = useMemo(
+    () => buildReplayBuckets(preparedReplayReports, replayBounds),
+    [preparedReplayReports, replayBounds]
+  );
+  const replaySnapshotCursorMs = replayBounds
+    ? clampReplayCursor(
+        replayCursorMs > 0 ? replayCursorMs : replayBounds.startMs,
+        replayBounds
+      )
+    : 0;
+  const replaySnapshot = useMemo(
+    () =>
+      buildReplaySnapshot(
+        preparedReplayReports,
+        replaySnapshotCursorMs,
+        replayBounds?.startMs
+      ),
+    [preparedReplayReports, replayBounds?.startMs, replaySnapshotCursorMs]
+  );
+  const liveAlertZones = useMemo(
     () => buildAlertZones(reports, currentTimeMs > 0 ? new Date(currentTimeMs) : new Date()),
     [currentTimeMs, reports]
+  );
+  const replayViewData = useMemo(
+    () =>
+      selectReplayViewData(
+        replayMode,
+        visibleReports,
+        liveAlertZones,
+        replaySnapshot
+      ),
+    [liveAlertZones, replayMode, replaySnapshot, visibleReports]
+  );
+  const alertZones = replayViewData.alertZones;
+  const mapReports = replayViewData.reports;
+  const incidentReports =
+    replayMode === "replay" ? replaySnapshot.reports : reports;
+  const incidentNow = useMemo(
+    () =>
+      replayMode === "replay"
+        ? new Date(replaySnapshot.cursorMs)
+        : currentTimeMs > 0
+          ? new Date(currentTimeMs)
+          : new Date(),
+    [currentTimeMs, replayMode, replaySnapshot.cursorMs]
+  );
+  const liveReplayReports = useMemo(
+    () =>
+      currentTimeMs > 0
+        ? filterReportsAtCursor(preparedReplayReports, currentTimeMs)
+        : [],
+    [currentTimeMs, preparedReplayReports]
+  );
+  const liveReplayMetrics = useMemo(
+    () => calculateReplayMetrics(liveReplayReports, liveAlertZones),
+    [liveAlertZones, liveReplayReports]
+  );
+  const replayPanelMetrics =
+    replayMode === "replay" ? replaySnapshot.metrics : liveReplayMetrics;
+  const heatPoints = useMemo(
+    () =>
+      replayMode === "replay"
+        ? replaySnapshot.heatPoints
+        : calculateHeatPoints(liveReplayReports),
+    [liveReplayReports, replayMode, replaySnapshot.heatPoints]
+  );
+  const mapSelectedReport = useMemo(
+    () =>
+      selectedReport &&
+      mapReports.some((report) => report.id === selectedReport.id)
+        ? selectedReport
+        : null,
+    [mapReports, selectedReport]
   );
   const activeSelectedAlertZoneId = useMemo(
     () =>
@@ -307,10 +441,10 @@ export function FireWatchApp() {
       buildIncidentDetail(
         activeSelectedAlertZoneId,
         alertZones,
-        reports,
-        currentTimeMs > 0 ? new Date(currentTimeMs) : new Date()
+        incidentReports,
+        incidentNow
       ),
-    [activeSelectedAlertZoneId, alertZones, currentTimeMs, reports]
+    [activeSelectedAlertZoneId, alertZones, incidentNow, incidentReports]
   );
   const smokePlumeOptions = useMemo<SmokePlumeOptions>(
     () => ({
@@ -345,6 +479,170 @@ export function FireWatchApp() {
       }),
     [currentTimeMs, incidentBriefShareUrl, incidentBriefTarget, smokePlume]
   );
+
+  useEffect(() => {
+    replayCursorRef.current = replaySnapshotCursorMs;
+  }, [replaySnapshotCursorMs]);
+
+  useEffect(() => {
+    if (
+      hasAppliedReplayDeepLinkRef.current ||
+      !isReportDataReady ||
+      currentTimeMs <= 0
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled || hasAppliedReplayDeepLinkRef.current) {
+        return;
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("mode") !== "replay") {
+        hasAppliedReplayDeepLinkRef.current = true;
+        return;
+      }
+
+      const deepLinkWindow = parseReplayWindow(params.get("window"));
+      const deepLinkBounds = findReplayTimeBounds(
+        preparedReplayReports,
+        REPLAY_WINDOW_MS[deepLinkWindow],
+        currentTimeMs
+      );
+      setReplayWindowKey(deepLinkWindow);
+      setReplayMode("replay");
+      setReplayPlaying(false);
+      setHeatmapEnabled(true);
+      setReplayCursorMs(
+        deepLinkBounds
+          ? clampReplayCursor(
+              parseReplayTimestamp(params.get("at"), deepLinkBounds.endMs),
+              deepLinkBounds
+            )
+          : 0
+      );
+      hasAppliedReplayDeepLinkRef.current = true;
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentTimeMs, isReportDataReady, preparedReplayReports]);
+
+  useEffect(() => {
+    if (replayMode !== "replay" || !replayPlaying || !replayBounds) {
+      return undefined;
+    }
+
+    const activeReplayBounds = replayBounds;
+    let animationFrameId = 0;
+    const playbackStartCursorMs =
+      replayCursorRef.current >= activeReplayBounds.endMs
+        ? activeReplayBounds.startMs
+        : replayCursorRef.current;
+    const playbackStartedAt = performance.now();
+
+    function tick(timestamp: number): void {
+      const advanced = advanceReplayCursor(
+        playbackStartCursorMs,
+        timestamp - playbackStartedAt,
+        activeReplayBounds,
+        replaySpeed
+      );
+      const nextCursorMs = snapReplayCursorToBucket(
+        advanced.cursorMs,
+        activeReplayBounds,
+        replayBuckets
+      );
+      if (nextCursorMs !== replayCursorRef.current) {
+        replayCursorRef.current = nextCursorMs;
+        setReplayCursorMs(nextCursorMs);
+      }
+
+      if (advanced.ended) {
+        setReplayPlaying(false);
+        return;
+      }
+      animationFrameId = window.requestAnimationFrame(tick);
+    }
+
+    animationFrameId = window.requestAnimationFrame(tick);
+    return () => {
+      window.cancelAnimationFrame(animationFrameId);
+    };
+  }, [replayBounds, replayBuckets, replayMode, replayPlaying, replaySpeed]);
+
+  useEffect(() => {
+    if (replayMode !== "replay" || replayBounds === null) {
+      previousReplaySnapshotRef.current = null;
+      return;
+    }
+
+    const previousSnapshot = previousReplaySnapshotRef.current;
+    if (
+      previousSnapshot &&
+      replaySnapshot.cursorMs > previousSnapshot.cursorMs
+    ) {
+      const summary = buildReplayChangeSummary(
+        previousSnapshot,
+        replaySnapshot
+      );
+      setReplayChangeSummary(summary);
+      if (summary.riskEscalationCount > 0 || summary.zoneMergeCount > 0) {
+        setReplayObservedEvents((currentEvents) => {
+          const nextEvent: ReplayObservedEvent = {
+            cursorMs: replaySnapshot.cursorMs,
+            riskEscalationCount: summary.riskEscalationCount,
+            zoneMergeCount: summary.zoneMergeCount
+          };
+          const existingIndex = currentEvents.findIndex(
+            (event) => event.cursorMs === nextEvent.cursorMs
+          );
+          if (existingIndex < 0) {
+            return [...currentEvents, nextEvent].sort(
+              (first, second) => first.cursorMs - second.cursorMs
+            );
+          }
+          return currentEvents.map((event, index) =>
+            index === existingIndex ? nextEvent : event
+          );
+        });
+      }
+    } else if (
+      previousSnapshot &&
+      replaySnapshot.cursorMs < previousSnapshot.cursorMs
+    ) {
+      setReplayChangeSummary(null);
+      setReplayObservedEvents((currentEvents) =>
+        currentEvents.filter(
+          (event) => event.cursorMs <= replaySnapshot.cursorMs
+        )
+      );
+    }
+    previousReplaySnapshotRef.current = replaySnapshot;
+  }, [replayBounds, replayMode, replaySnapshot]);
+
+  useEffect(() => {
+    if (
+      replayMode !== "replay" ||
+      !shouldClearSelectedReplayZone(selectedAlertZoneId, alertZones)
+    ) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) {
+        setSelectedAlertZoneId(null);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [alertZones, replayMode, selectedAlertZoneId]);
 
   useEffect(() => {
     if (hasAppliedDeepLinkRef.current) {
@@ -605,6 +903,97 @@ export function FireWatchApp() {
     setSelectedAlertZoneId(null);
   }, []);
 
+  const resetReplayComparison = useCallback(() => {
+    previousReplaySnapshotRef.current = null;
+    setReplayChangeSummary(null);
+    setReplayObservedEvents([]);
+  }, []);
+
+  const handleEnterReplay = useCallback(() => {
+    setReplayMode("replay");
+    setReplayPlaying(false);
+    setHeatmapEnabled(true);
+    resetReplayComparison();
+
+    const nextCursorMs = replayBounds?.startMs ?? 0;
+    replayCursorRef.current = nextCursorMs;
+    setReplayCursorMs(nextCursorMs);
+  }, [replayBounds, resetReplayComparison]);
+
+  const handleReturnToLive = useCallback(() => {
+    setReplayMode("live");
+    setReplayPlaying(false);
+    resetReplayComparison();
+  }, [resetReplayComparison]);
+
+  const handleReplayWindowChange = useCallback(
+    (nextWindowKey: ReplayWindowKey) => {
+      const nextBounds = findReplayTimeBounds(
+        preparedReplayReports,
+        REPLAY_WINDOW_MS[nextWindowKey],
+        currentTimeMs
+      );
+      const nextCursorMs = nextBounds?.startMs ?? 0;
+
+      setReplayWindowKey(nextWindowKey);
+      setReplayMode("replay");
+      setReplayPlaying(false);
+      replayCursorRef.current = nextCursorMs;
+      setReplayCursorMs(nextCursorMs);
+      resetReplayComparison();
+    },
+    [currentTimeMs, preparedReplayReports, resetReplayComparison]
+  );
+
+  const handleReplayCursorCommit = useCallback(
+    (nextCursorMs: number) => {
+      if (!replayBounds) {
+        return;
+      }
+
+      const clampedCursorMs = clampReplayCursor(nextCursorMs, replayBounds);
+      setReplayMode("replay");
+      setReplayPlaying(false);
+      replayCursorRef.current = clampedCursorMs;
+      setReplayCursorMs(clampedCursorMs);
+
+      const url = new URL(window.location.href);
+      url.searchParams.set("mode", "replay");
+      url.searchParams.set("at", new Date(clampedCursorMs).toISOString());
+      url.searchParams.set("window", replayWindowKey);
+      window.history.replaceState(window.history.state, "", url);
+    },
+    [replayBounds, replayWindowKey]
+  );
+
+  const handleReplayReset = useCallback(() => {
+    if (!replayBounds) {
+      return;
+    }
+
+    setReplayPlaying(false);
+    replayCursorRef.current = replayBounds.startMs;
+    setReplayCursorMs(replayBounds.startMs);
+    resetReplayComparison();
+  }, [replayBounds, resetReplayComparison]);
+
+  const handleReplayPlayingChange = useCallback(
+    (nextPlaying: boolean) => {
+      if (!replayBounds) {
+        setReplayPlaying(false);
+        return;
+      }
+
+      if (nextPlaying && replayCursorRef.current >= replayBounds.endMs) {
+        replayCursorRef.current = replayBounds.startMs;
+        setReplayCursorMs(replayBounds.startMs);
+        resetReplayComparison();
+      }
+      setReplayPlaying(nextPlaying);
+    },
+    [replayBounds, resetReplayComparison]
+  );
+
   const filterControls = (
     <div className="flex flex-wrap gap-2">
       {statusFilters.map((filter) => (
@@ -655,12 +1044,38 @@ export function FireWatchApp() {
         </div>
       ) : null}
 
-      <LiveMapSection>
+      <LiveMapSection
+        controls={
+          <ReplayControlPanel
+            bounds={replayBounds}
+            buckets={replayBuckets}
+            changeSummary={replayChangeSummary}
+            cursorMs={replaySnapshotCursorMs}
+            heatmapEnabled={heatmapEnabled}
+            metrics={replayPanelMetrics}
+            mode={replayMode}
+            observedEvents={replayObservedEvents}
+            playing={replayPlaying}
+            speed={replaySpeed}
+            windowKey={replayWindowKey}
+            onCursorCommit={handleReplayCursorCommit}
+            onEnterReplay={handleEnterReplay}
+            onHeatmapEnabledChange={setHeatmapEnabled}
+            onPlayingChange={handleReplayPlayingChange}
+            onReset={handleReplayReset}
+            onReturnToLive={handleReturnToLive}
+            onSpeedChange={setReplaySpeed}
+            onWindowChange={handleReplayWindowChange}
+          />
+        }
+      >
         <FireMap
-          reports={visibleReports}
-          selectedReport={selectedReport}
+          reports={mapReports}
+          selectedReport={mapSelectedReport}
           onSelectReport={setSelectedReportId}
           alertZones={alertZones}
+          heatmapEnabled={heatmapEnabled}
+          heatPoints={heatPoints}
           selectedAlertZoneId={activeSelectedAlertZoneId}
           smokePlume={smokePlume}
           onSelectAlertZone={handleSelectAlertZone}
