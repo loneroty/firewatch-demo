@@ -7,6 +7,7 @@ import {
 } from "@firebase/rules-unit-testing";
 import {
   Timestamp,
+  deleteDoc,
   doc,
   getDoc,
   setLogLevel,
@@ -101,6 +102,56 @@ async function seedReport(id: string, userId: string): Promise<void> {
 async function seedUser(userId: string): Promise<void> {
   await testEnv.withSecurityRulesDisabled(async (context) => {
     await setDoc(doc(context.firestore(), "users", userId), adminUserData({ id: userId }));
+  });
+}
+
+function incidentZoneData(
+  id: string,
+  status: "active" | "resolved" | "hidden" = "active"
+) {
+  return {
+    id,
+    reportIds: ["report-a"],
+    reportCount: 1,
+    centerLat: 18.7883,
+    centerLng: 98.9853,
+    geohash: "w5q6ukqc",
+    categories: ["open_burning"],
+    categoryCounts: {
+      industrial_smoke: 0,
+      open_burning: 1,
+      other: 0,
+      wildfire_smoke: 0
+    },
+    riskLevel: "เฝ้าระวัง",
+    riskRank: 1,
+    riskScore: 4,
+    maxSeverity: 2,
+    averageSeverity: 2,
+    verifiedReportCount: 0,
+    latestReportAt: CREATED_AT,
+    primaryAddressLabel: "เชียงใหม่",
+    riskFactors: ["1 รายงานในรัศมี 500 เมตร"],
+    status,
+    anchorReportId: "report-a",
+    algorithmVersion: "incident-zone-v1",
+    stateHash: "state-hash",
+    nextEvaluationAt: CREATED_AT,
+    createdAt: CREATED_AT,
+    updatedAt: CREATED_AT,
+    version: 1
+  };
+}
+
+async function seedIncidentZone(
+  id: string,
+  status: "active" | "resolved" | "hidden" = "active"
+): Promise<void> {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(
+      doc(context.firestore(), "incidentZones", id),
+      incidentZoneData(id, status)
+    );
   });
 }
 
@@ -282,6 +333,107 @@ describe("firestore security rules", () => {
       setDoc(doc(adminDb, "admins", "user-a"), {
         uid: "user-a",
         role: "moderator"
+      })
+    );
+  });
+
+  it("allows public and authenticated reads of visible incident zones only", async () => {
+    await seedIncidentZone("zone-active", "active");
+    await seedIncidentZone("zone-resolved", "resolved");
+    await seedIncidentZone("zone-hidden", "hidden");
+    const publicDb = testEnv.unauthenticatedContext().firestore();
+    const userDb = authedContext("user-a").firestore();
+
+    await assertSucceeds(getDoc(doc(publicDb, "incidentZones", "zone-active")));
+    await assertSucceeds(getDoc(doc(userDb, "incidentZones", "zone-resolved")));
+    await assertFails(getDoc(doc(publicDb, "incidentZones", "zone-hidden")));
+    await assertFails(getDoc(doc(userDb, "incidentZones", "zone-hidden")));
+  });
+
+  it("blocks all client creates, updates, and deletes for incident zones", async () => {
+    await seedIncidentZone("zone-existing");
+    await seedAdmin("admin-a");
+    const userDb = authedContext("user-a").firestore();
+    const adminDb = authedContext("admin-a").firestore();
+
+    await assertFails(
+      setDoc(
+        doc(userDb, "incidentZones", "zone-new"),
+        incidentZoneData("zone-new")
+      )
+    );
+    await assertFails(
+      updateDoc(doc(adminDb, "incidentZones", "zone-existing"), {
+        riskRank: 3
+      })
+    );
+    await assertFails(
+      deleteDoc(doc(adminDb, "incidentZones", "zone-existing"))
+    );
+  });
+
+  it("blocks all client access to incident-zone memberships", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(
+        doc(context.firestore(), "incidentZoneMemberships", "report-a"),
+        {
+          reportId: "report-a",
+          zoneId: "zone-a",
+          status: "active"
+        }
+      );
+    });
+    const userDb = authedContext("user-a").firestore();
+
+    await assertFails(
+      getDoc(doc(userDb, "incidentZoneMemberships", "report-a"))
+    );
+    await assertFails(
+      setDoc(doc(userDb, "incidentZoneMemberships", "report-b"), {
+        reportId: "report-b",
+        zoneId: "zone-a",
+        status: "active"
+      })
+    );
+  });
+
+  it("allows public alias reads but blocks all client alias writes", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), "incidentZoneAliases", "zone-old"), {
+        oldZoneId: "zone-old",
+        canonicalZoneId: "zone-current",
+        reason: "merged"
+      });
+    });
+    const publicDb = testEnv.unauthenticatedContext().firestore();
+    const userDb = authedContext("user-a").firestore();
+
+    await assertSucceeds(
+      getDoc(doc(publicDb, "incidentZoneAliases", "zone-old"))
+    );
+    await assertFails(
+      setDoc(doc(userDb, "incidentZoneAliases", "zone-spoofed"), {
+        oldZoneId: "zone-spoofed",
+        canonicalZoneId: "zone-current",
+        reason: "merged"
+      })
+    );
+  });
+
+  it("blocks all client access to incident-zone jobs", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), "incidentZoneJobs", "w5q6"), {
+        partitionKey: "w5q6",
+        status: "pending"
+      });
+    });
+    const userDb = authedContext("user-a").firestore();
+
+    await assertFails(getDoc(doc(userDb, "incidentZoneJobs", "w5q6")));
+    await assertFails(
+      setDoc(doc(userDb, "incidentZoneJobs", "w5q7"), {
+        partitionKey: "w5q7",
+        status: "pending"
       })
     );
   });

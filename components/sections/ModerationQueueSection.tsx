@@ -162,6 +162,8 @@ export function ModerationQueueSection({
                       type="button"
                       onClick={() => onSelectReport(report.id)}
                     >
+                      {/* Firebase/data URLs are runtime values and keep the existing fallback behavior. */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         className="h-full w-full object-cover transition duration-200 group-hover:scale-[1.03]"
                         src={report.photoURL}

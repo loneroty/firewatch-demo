@@ -180,6 +180,24 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /incidentZones/{zoneId} {
+      allow read: if resource.data.status in ['active', 'resolved'];
+      allow create, update, delete: if false;
+    }
+
+    match /incidentZoneAliases/{aliasId} {
+      allow read: if true;
+      allow create, update, delete: if false;
+    }
+
+    match /incidentZoneMemberships/{reportId} {
+      allow read, write: if false;
+    }
+
+    match /incidentZoneJobs/{partitionKey} {
+      allow read, write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
